@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>WeatherHealth — Admin Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Sora:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style>
+    .admin-wrapper {
+      min-height: 100vh;
+      background: var(--bg);
+      padding: 40px 5%;
+    }
+
+    .admin-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 40px;
+    }
+
+    .admin-header h1 {
+      font-family: var(--font-display);
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .admin-header p {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .back-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      background: var(--sky);
+      color: white;
+      border: none;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 0.88rem;
+      cursor: pointer;
+      font-family: var(--font-body);
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+
+    .back-btn:hover { background: var(--sky-dark); }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 24px;
+      margin-bottom: 40px;
+    }
+
+    .stat-card {
+      background: white;
+      border-radius: var(--radius);
+      padding: 28px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .stat-card .stat-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      margin-bottom: 8px;
+    }
+
+    .stat-card .stat-number {
+      font-family: var(--font-display);
+      font-size: 2.4rem;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1;
+    }
+
+    .stat-card .stat-label {
+      font-size: 0.88rem;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .admin-section {
+      background: white;
+      border-radius: var(--radius);
+      padding: 32px;
+      box-shadow: var(--shadow);
+      margin-bottom: 24px;
+    }
+
+    .admin-section h2 {
+      font-family: var(--font-display);
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 24px;
+    }
+
+    .city-bar {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .city-bar .city-name {
+      font-weight: 600;
+      color: var(--text);
+      width: 120px;
+      font-size: 0.9rem;
+    }
+
+    .city-bar .bar-wrap {
+      flex: 1;
+      background: var(--bg);
+      border-radius: 20px;
+      height: 10px;
+      overflow: hidden;
+    }
+
+    .city-bar .bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--sky), var(--sky-light));
+      border-radius: 20px;
+      transition: width 0.8s ease;
+    }
+
+    .city-bar .city-count {
+      font-weight: 700;
+      color: var(--sky);
+      font-size: 0.9rem;
+      width: 40px;
+      text-align: right;
+    }
+
+    .loading-text {
+      text-align: center;
+      color: var(--muted);
+      padding: 40px;
+    }
+
+    .brand-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.2rem;
+      color: var(--sky);
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="admin-wrapper">
+    <!-- Header -->
+    <div class="admin-header">
+      <div>
+        <a href="index.html" class="brand-link">
+          <i class="fas fa-cloud-sun"></i>
+          WeatherHealth
+        </a>
+        <h1 style="margin-top: 12px;">Admin Dashboard</h1>
+        <p>App usage statistics and insights</p>
+      </div>
+      <a href="index.html" class="back-btn">
+        <i class="fas fa-arrow-left"></i> Back to App
+      </a>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="stats-grid" id="statsGrid">
+      <div class="loading-text">Loading statistics...</div>
+    </div>
+
+    <!-- Top Cities -->
+    <div class="admin-section">
+      <h2>🏙️ Most Searched Cities</h2>
+      <div id="topCitiesContainer">
+        <div class="loading-text">Loading...</div>
+      </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="admin-section">
+      <h2>📊 App Overview</h2>
+      <div id="overviewContainer">
+        <div class="loading-text">Loading...</div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    async function loadAdminStats() {
+      try {
+        const res = await fetch("http://localhost:5000/api/admin/stats");
+        const data = await res.json();
+
+        // Render stat cards
+        const statsGrid = document.getElementById("statsGrid");
+        statsGrid.innerHTML = `
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#e8f4fd;">
+              <i class="fas fa-users" style="color:#3498db;"></i>
+            </div>
+            <div class="stat-number">${data.totalUsers}</div>
+            <div class="stat-label">Total Users</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#eafaf1;">
+              <i class="fas fa-magnifying-glass" style="color:#27ae60;"></i>
+            </div>
+            <div class="stat-number">${data.totalSearches}</div>
+            <div class="stat-label">Total Searches</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#fef9e7;">
+              <i class="fas fa-clock" style="color:#f39c12;"></i>
+            </div>
+            <div class="stat-number">${data.recentSearches}</div>
+            <div class="stat-label">Searches (Last 24h)</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#fdf2f8;">
+              <i class="fas fa-star" style="color:#8e44ad;"></i>
+            </div>
+            <div class="stat-number">${data.totalFavorites}</div>
+            <div class="stat-label">Total Favorites</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#fdedec;">
+              <i class="fas fa-user-plus" style="color:#e74c3c;"></i>
+            </div>
+            <div class="stat-number">${data.newUsers}</div>
+            <div class="stat-label">New Users (This Week)</div>
+          </div>
+        `;
+
+        // Render top cities
+        const maxCount = data.topCities[0]?.count || 1;
+        const topCitiesContainer = document.getElementById("topCitiesContainer");
+        topCitiesContainer.innerHTML = data.topCities.map((city, index) => `
+          <div class="city-bar">
+            <div class="city-name">${index + 1}. ${city._id}</div>
+            <div class="bar-wrap">
+              <div class="bar-fill" style="width: ${(city.count / maxCount) * 100}%"></div>
+            </div>
+            <div class="city-count">${city.count}</div>
+          </div>
+        `).join("");
+
+        // Render overview
+        const overviewContainer = document.getElementById("overviewContainer");
+        overviewContainer.innerHTML = `
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+            <div style="background: var(--bg); border-radius: 12px; padding: 20px; text-align: center;">
+              <div style="font-size: 1.8rem; font-weight: 700; color: var(--sky);">${data.totalUsers > 0 ? Math.round(data.totalSearches / data.totalUsers) : 0}</div>
+              <div style="color: var(--muted); font-size: 0.85rem; margin-top: 4px;">Avg Searches per User</div>
+            </div>
+            <div style="background: var(--bg); border-radius: 12px; padding: 20px; text-align: center;">
+              <div style="font-size: 1.8rem; font-weight: 700; color: var(--mint);">${data.topCities[0]?._id || "N/A"}</div>
+              <div style="color: var(--muted); font-size: 0.85rem; margin-top: 4px;">Most Popular City</div>
+            </div>
+            <div style="background: var(--bg); border-radius: 12px; padding: 20px; text-align: center;">
+              <div style="font-size: 1.8rem; font-weight: 700; color: var(--warm);">${data.newUsers}</div>
+              <div style="color: var(--muted); font-size: 0.85rem; margin-top: 4px;">New Users This Week</div>
+            </div>
+          </div>
+        `;
+
+      } catch (error) {
+        console.log("Could not load admin stats:", error);
+        document.getElementById("statsGrid").innerHTML = `<div class="loading-text">Could not load statistics. Make sure the server is running.</div>`;
+      }
+    }
+
+    loadAdminStats();
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>WeatherHealth — My Profile</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="auth.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Sora:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style>
+    .profile-page {
+      min-height: 100vh;
+      background: var(--bg);
+      padding: 40px 5%;
+    }
+
+    .profile-page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 40px;
+    }
+
+    .profile-page-header h1 {
+      font-family: var(--font-display);
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .profile-page-header p {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-top: 4px;
+    }
+
+    .profile-avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--sky-dark), var(--sky));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      color: white;
+      font-family: var(--font-display);
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    .profile-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .profile-page-card {
+      background: white;
+      border-radius: var(--radius);
+      padding: 32px;
+      box-shadow: var(--shadow);
+    }
+
+    .profile-page-card h2 {
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .profile-page-card h2 i {
+      color: var(--sky);
+    }
+
+    .profile-field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .profile-field-group label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 4px;
+      display: block;
+    }
+
+    .profile-field-group input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-family: var(--font-body);
+      outline: none;
+      transition: border-color 0.2s;
+      color: var(--text);
+      background: white;
+    }
+
+    .profile-field-group input:focus {
+      border-color: var(--sky);
+    }
+
+    .profile-save-btn {
+      width: 100%;
+      margin-top: 20px;
+      padding: 13px;
+      background: var(--sky);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      font-family: var(--font-body);
+      transition: background 0.2s;
+    }
+
+    .profile-save-btn:hover { background: var(--sky-dark); }
+
+    .profile-msg {
+      text-align: center;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-top: 12px;
+      min-height: 20px;
+    }
+
+    .back-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      background: var(--sky);
+      color: white;
+      border: none;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 0.88rem;
+      cursor: pointer;
+      font-family: var(--font-body);
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+
+    .back-btn:hover { background: var(--sky-dark); }
+
+    .user-info-card {
+      text-align: center;
+      padding: 32px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="profile-page">
+    <!-- Header -->
+    <div class="profile-page-header">
+      <div>
+        <h1>My Profile</h1>
+        <p>Manage your account information</p>
+      </div>
+      <a href="index.html" class="back-btn">
+        <i class="fas fa-arrow-left"></i> Back to App
+      </a>
+    </div>
+
+    <div class="profile-cards">
+
+      <!-- User Info Card -->
+      <div class="profile-page-card user-info-card">
+        <div class="profile-avatar" id="profileAvatar">F</div>
+        <h2 style="justify-content: center;" id="profileName">Loading...</h2>
+        <p style="color: var(--muted); font-size: 0.9rem;" id="profileEmail">Loading...</p>
+        <p style="color: var(--muted); font-size: 0.8rem; margin-top: 8px;" id="profileJoined"></p>
+      </div>
+
+      <!-- Update Profile Card -->
+      <div class="profile-page-card">
+        <h2><i class="fas fa-user-pen"></i> Update Profile</h2>
+        <div class="profile-field-group">
+          <div>
+            <label>Username</label>
+            <input type="text" id="updateUsername" placeholder="Enter new username" />
+          </div>
+          <div>
+            <label>Email</label>
+            <input type="email" id="updateEmail" placeholder="Enter new email" />
+          </div>
+        </div>
+        <button class="profile-save-btn" onclick="updateProfile()">
+          <i class="fas fa-save"></i> Update Profile
+        </button>
+        <p class="profile-msg" id="updateMsg"></p>
+      </div>
+
+      <!-- Change Password Card -->
+      <div class="profile-page-card">
+        <h2><i class="fas fa-lock"></i> Change Password</h2>
+        <div class="profile-field-group">
+          <div>
+            <label>Current Password</label>
+            <input type="password" id="currentPassword" placeholder="Enter current password" />
+          </div>
+          <div>
+            <label>New Password</label>
+            <input type="password" id="newPassword" placeholder="Enter new password" />
+          </div>
+          <div>
+            <label>Confirm New Password</label>
+            <input type="password" id="confirmPassword" placeholder="Confirm new password" />
+          </div>
+        </div>
+        <button class="profile-save-btn" onclick="changePassword()" style="background: var(--mint);">
+          <i class="fas fa-key"></i> Change Password
+        </button>
+        <p class="profile-msg" id="passwordMsg"></p>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const user = JSON.parse(localStorage.getItem("user"));
+    const token = localStorage.getItem("token");
+
+    if (!user || !token) {
+      window.location.href = "auth.html";
+    }
+
+    // Display user info
+    if (user) {
+      document.getElementById("profileAvatar").textContent = user.username.charAt(0).toUpperCase();
+      document.getElementById("profileName").textContent = user.username;
+      document.getElementById("profileEmail").textContent = user.email;
+      document.getElementById("updateUsername").value = user.username;
+      document.getElementById("updateEmail").value = user.email;
+    }
+    async function updateProfile() {
+      const username = document.getElementById("updateUsername").value.trim();
+      const email = document.getElementById("updateEmail").value.trim();
+      const msg = document.getElementById("updateMsg");
+
+      if (!username || !email) {
+        msg.textContent = "❌ Please fill in all fields.";
+        msg.style.color = "#e05a5a";
+        return;
+      }
+
+      try {
+        const res = await fetch(`http://localhost:5000/api/auth/update/${user.id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({ username, email }),
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          // Update localStorage
+          const updatedUser = { ...user, username, email };
+          localStorage.setItem("user", JSON.stringify(updatedUser));
+
+          document.getElementById("profileAvatar").textContent = username.charAt(0).toUpperCase();
+          document.getElementById("profileName").textContent = username;
+          document.getElementById("profileEmail").textContent = email;
+
+          msg.textContent = "✅ Profile updated successfully!";
+          msg.style.color = "#27ae60";
+        } else {
+          msg.textContent = `❌ ${data.error || "Update failed."}`;
+          msg.style.color = "#e05a5a";
+        }
+      } catch (error) {
+        msg.textContent = "❌ Could not connect to server.";
+        msg.style.color = "#e05a5a";
+      }
+    }
+
+    async function changePassword() {
+      const currentPassword = document.getElementById("currentPassword").value;
+      const newPassword = document.getElementById("newPassword").value;
+      const confirmPassword = document.getElementById("confirmPassword").value;
+      const msg = document.getElementById("passwordMsg");
+
+      if (!currentPassword || !newPassword || !confirmPassword) {
+        msg.textContent = "❌ Please fill in all fields.";
+        msg.style.color = "#e05a5a";
+        return;
+      }
+
+      if (newPassword !== confirmPassword) {
+        msg.textContent = "❌ New passwords do not match.";
+        msg.style.color = "#e05a5a";
+        return;
+      }
+
+      if (newPassword.length < 6) {
+        msg.textContent = "❌ Password must be at least 6 characters.";
+        msg.style.color = "#e05a5a";
+        return;
+      }
+
+      try {
+        const res = await fetch(`http://localhost:5000/api/auth/changepassword/${user.id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({ currentPassword, newPassword }),
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          msg.textContent = "✅ Password changed successfully!";
+          msg.style.color = "#27ae60";
+          document.getElementById("currentPassword").value = "";
+          document.getElementById("newPassword").value = "";
+          document.getElementById("confirmPassword").value = "";
+        } else {
+          msg.textContent = `❌ ${data.error || "Password change failed."}`;
+          msg.style.color = "#e05a5a";
+        }
+      } catch (error) {
+        msg.textContent = "❌ Could not connect to server.";
+        msg.style.color = "#e05a5a";
+      }
+    }
+  </script>
+
+</body>
+</html>

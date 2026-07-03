@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>WeatherHealth — Sign In</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="auth.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Sora:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+</head>
+<body>
+
+  <div class="auth-wrapper">
+    <div class="auth-card">
+      <div class="auth-brand">
+        <i class="fas fa-cloud-sun"></i>
+        <span>WeatherHealth</span>
+      </div>
+
+      <!-- TABS -->
+      <div class="auth-tabs">
+        <button class="tab-btn active" id="loginTab" onclick="switchTab('login')">Sign In</button>
+        <button class="tab-btn" id="signupTab" onclick="switchTab('signup')">Sign Up</button>
+      </div>
+
+      <!-- LOGIN FORM -->
+      <form id="loginForm" class="auth-form">
+        <p class="auth-msg" id="loginMsg"></p>
+        <label>Email</label>
+        <input type="email" id="loginEmail" placeholder="you@example.com" required />
+
+        <label>Password</label>
+        <input type="password" id="loginPassword" placeholder="••••••••" required />
+
+        <button type="submit" class="auth-btn" id="loginBtn">Sign In</button>
+      </form>
+
+      <!-- SIGNUP FORM -->
+      <form id="signupForm" class="auth-form" style="display:none;">
+        <p class="auth-msg" id="signupMsg"></p>
+        <label>Username</label>
+        <input type="text" id="signupUsername" placeholder="yourname" required />
+
+        <label>Email</label>
+        <input type="email" id="signupEmail" placeholder="you@example.com" required />
+
+        <label>Password</label>
+        <input type="password" id="signupPassword" placeholder="At least 6 characters" required />
+
+        <button type="submit" class="auth-btn" id="signupBtn">Create Account</button>
+      </form>
+
+      <p class="auth-footer-text">
+        <a href="index.html"><i class="fas fa-arrow-left"></i> Back to home</a>
+      </p>
+    </div>
+  </div>
+
+  <script src="auth.js"></script>
+</body>
+</html>

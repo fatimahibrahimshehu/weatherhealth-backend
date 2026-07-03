@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>WeatherHealth — Your Daily Health Advisory</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Sora:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+</head>
+<body>
+
+  <!-- WEATHER ALERT BANNER -->
+  <div class="alert-banner" id="alertBanner" style="display:none;">
+    <div class="alert-content">
+      <i class="fas fa-triangle-exclamation"></i>
+      <span id="alertMessage">Weather alert!</span>
+    </div>
+    <button onclick="dismissAlert()"><i class="fas fa-times"></i></button>
+  </div>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="nav-brand">
+      <i class="fas fa-cloud-sun"></i>
+      <span>WeatherHealth</span>
+    </div>
+    <ul class="nav-links">
+      <li><a href="#home" class="active">Home</a></li>
+      <li><a href="#tips">Health Tips</a></li>
+      <li><a href="#about">About</a></li>
+      <li><a href="admin.html">Admin</a></li>
+    </ul>
+    <div class="user-info" id="userInfo">
+      <span id="welcomeText" onclick="window.location.href='profile.html'" style="cursor:pointer;" title="View Profile"></span>
+      <select id="languageSwitcher" onchange="switchLanguage(this.value)">
+        <option value="en">🇬🇧 English</option>
+        <option value="fr">🇫🇷 French</option>
+        <option value="ar">🇸🇦 Arabic</option>
+        <option value="ha">🇳🇬 Hausa</option>
+        <option value="yo">🇳🇬 Yoruba</option>
+      </select>
+      <button id="darkModeToggle" onclick="toggleDarkMode()"><i class="fas fa-moon"></i></button>
+      <button id="logoutBtn" onclick="logout()">Logout</button>
+    </div>
+    <div class="hamburger" onclick="toggleMenu()">
+      <i class="fas fa-bars"></i>
+    </div>
+  </nav>
+
+  <!-- MOBILE MENU -->
+  <div class="mobile-menu" id="mobileMenu">
+    <a href="#home" onclick="toggleMenu()">Home</a>
+    <a href="#tips" onclick="toggleMenu()">Health Tips</a>
+    <a href="#about" onclick="toggleMenu()">About</a>
+    <a href="admin.html" onclick="toggleMenu()">Admin</a>
+  </div>
+
+  <!-- HERO / HOME SECTION -->
+  <section class="hero" id="home">
+    <div class="hero-content">
+      <p class="hero-eyebrow">Real-Time Weather. Personalised Health Advice.</p>
+      <h1 class="hero-title">Weather-Based<br/><span>Health Advisory</span></h1>
+      <p class="hero-subtitle">A mobile-based application that analyses real-time weather conditions and air quality data to provide personalised health recommendations for your daily activities.</p>
+      <!-- SEARCH BAR -->
+      <div class="search-bar">
+        <i class="fas fa-search"></i>
+        <input type="text" id="cityInput" placeholder="Enter city name e.g. Abuja..." />
+        <button onclick="getWeather()">Check Weather</button>
+      </div>
+      <button class="location-btn" onclick="getLocationWeather()">
+        <i class="fas fa-location-dot"></i> Use My Location
+      </button>
+      <p class="search-hint" id="searchHint"></p>
+    </div>
+    <div class="hero-visual">
+      <div class="weather-card" id="weatherCard" style="display:none;">
+        <div class="weather-card-top">
+          <div>
+            <p class="card-city" id="cardCity">—</p>
+            <p class="card-date" id="cardDate">—</p>
+          </div>
+          <div class="weather-icon-wrap">
+            <img id="weatherIcon" src="" alt="weather icon" />
+          </div>
+        </div>
+        <div class="card-temp" id="cardTemp">—</div>
+        <p class="card-desc" id="cardDesc">—</p>
+        <div class="card-stats">
+          <div class="stat">
+            <i class="fas fa-droplet"></i>
+            <span id="cardHumidity">—</span>
+            <small>Humidity</small>
+          </div>
+          <div class="stat">
+            <i class="fas fa-wind"></i>
+            <span id="cardWind">—</span>
+            <small>Wind</small>
+          </div>
+          <div class="stat">
+            <i class="fas fa-temperature-half"></i>
+            <span id="cardFeels">—</span>
+            <small>Feels Like</small>
+          </div>
+        </div>
+        <div class="card-sun">
+          <div class="sun-item">
+            <i class="fas fa-sunrise"></i>
+            <span id="cardSunrise">—</span>
+            <small>Sunrise</small>
+          </div>
+          <div class="sun-item">
+            <i class="fas fa-sunset"></i>
+            <span id="cardSunset">—</span>
+            <small>Sunset</small>
+          </div>
+        </div>
+        <button class="favorite-btn" id="favoriteBtn" onclick="addToFavorites()">
+          <i class="fas fa-star"></i> Add to Favorites
+        </button>
+        <button class="email-btn" id="emailBtn" onclick="sendWeatherEmail()">
+          <i class="fas fa-envelope"></i> Email Report
+        </button>
+        <button class="pdf-btn" id="pdfBtn" onclick="downloadPDFReport()">
+          <i class="fas fa-file-pdf"></i> Download PDF
+        </button>
+        <div class="share-btns">
+          <p class="share-label">Share:</p>
+          <button class="share-btn whatsapp" onclick="shareOnWhatsApp()">
+            <i class="fab fa-whatsapp"></i>
+          </button>
+          <button class="share-btn twitter" onclick="shareOnTwitter()">
+            <i class="fab fa-x-twitter"></i>
+          </button>
+          <button class="share-btn facebook" onclick="shareOnFacebook()">
+            <i class="fab fa-facebook"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Placeholder before search -->
+      <div class="hero-placeholder" id="heroPlaceholder">
+        <i class="fas fa-cloud-sun-rain"></i>
+        <p>Search a city to see live weather</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- HEALTH ADVISORY SECTION -->
+  <section class="advisory-section" id="advisorySection" style="display:none;">
+    <div class="section-header">
+      <h2>Health Advisory</h2>
+      <p>Based on current weather conditions in <span id="advisoryCity">your city</span></p>
+    </div>
+    <div class="advisory-grid" id="advisoryGrid"></div>
+  </section>
+
+  <!-- UV INDEX SECTION -->
+  <section class="uv-section" id="uvSection" style="display:none;">
+    <div class="section-header">
+      <h2>UV Index</h2>
+      <p>Sun exposure risk for <span id="uvCity">your city</span></p>
+    </div>
+    <div class="uv-card" id="uvCard">
+      <div class="uv-left">
+        <div class="uv-score" id="uvScore">—</div>
+        <div class="uv-level" id="uvLevel">—</div>
+      </div>
+      <div class="uv-right">
+        <p class="uv-advice" id="uvAdvice">—</p>
+        <div class="uv-tips">
+          <span><i class="fas fa-sun"></i> Wear SPF 30+</span>
+          <span><i class="fas fa-hat-cowboy"></i> Wear a hat</span>
+          <span><i class="fas fa-glasses"></i> UV sunglasses</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- AIR QUALITY SECTION -->
+  <section class="aqi-section" id="aqiSection" style="display:none;">
+    <div class="section-header">
+      <h2>Air Quality Index</h2>
+      <p>Current air quality for <span id="aqiCity">your city</span></p>
+    </div>
+    <div class="aqi-card" id="aqiCard">
+      <div class="aqi-left">
+        <div class="aqi-score" id="aqiScore">—</div>
+        <div class="aqi-label" id="aqiLabel">—</div>
+      </div>
+      <div class="aqi-right">
+        <p class="aqi-advice" id="aqiAdvice">—</p>
+        <div class="aqi-components" id="aqiComponents"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TEMPERATURE TREND CHART -->
+  <section class="chart-section" id="chartSection" style="display:none;">
+    <div class="section-header">
+      <h2>📈 Temperature Trend</h2>
+      <p>24-hour temperature forecast for <span id="chartCity">your city</span></p>
+    </div>
+    <div class="chart-container">
+      <canvas id="tempChart"></canvas>
+    </div>
+  </section>
+
+  <!-- HOURLY FORECAST SECTION -->
+  <section class="hourly-section" id="hourlySection" style="display:none;">
+    <div class="section-header">
+      <h2>Hourly Forecast</h2>
+      <p>Next 24 hours for <span id="hourlyCity">your city</span></p>
+    </div>
+    <div class="hourly-grid" id="hourlyGrid"></div>
+  </section>
+
+  <!-- 5-DAY FORECAST SECTION -->
+  <section class="forecast-section" id="forecastSection" style="display:none;">
+    <div class="section-header">
+      <h2>5-Day Forecast</h2>
+      <p>Plan ahead for <span id="forecastCity">your city</span></p>
+    </div>
+    <div class="forecast-grid" id="forecastGrid"></div>
+  </section>
+
+  <!-- FAVORITE CITIES SECTION -->
+  <section class="favorites-section" id="favoritesSection" style="display:none;">
+    <div class="section-header">
+      <h2>Your Favorite Cities</h2>
+      <p>Quick access to the places you care about</p>
+    </div>
+    <div class="favorites-grid" id="favoritesGrid"></div>
+  </section>
+
+  <!-- SEARCH HISTORY SECTION -->
+  <section class="history-section" id="historySection" style="display:none;">
+    <div class="section-header">
+      <h2>Your Recent Searches</h2>
+      <p>Quickly check weather for cities you've searched before</p>
+    </div>
+    <div class="history-grid" id="historyGrid"></div>
+  </section>
+
+  <!-- HEALTH PROFILE SECTION -->
+  <section class="profile-section" id="profileSection">
+    <div class="section-header">
+      <h2>Your Health Profile</h2>
+      <p>Set your health conditions for personalised advisories</p>
+    </div>
+    <div class="profile-card">
+      <div class="profile-form">
+        <div class="profile-field">
+          <label>Age</label>
+          <input type="number" id="profileAge" placeholder="e.g. 25" min="1" max="120" />
+        </div>
+        <div class="profile-field">
+          <label>Activity Level</label>
+          <select id="profileActivity">
+            <option value="sedentary">Sedentary (little or no exercise)</option>
+            <option value="moderate" selected>Moderate (light exercise)</option>
+            <option value="active">Active (intense exercise)</option>
+          </select>
+        </div>
+        <div class="profile-field">
+          <label>Health Conditions (select all that apply)</label>
+          <div class="conditions-grid">
+            <label class="condition-item"><input type="checkbox" value="asthma" /> Asthma</label>
+            <label class="condition-item"><input type="checkbox" value="diabetes" /> Diabetes</label>
+            <label class="condition-item"><input type="checkbox" value="heart disease" /> Heart Disease</label>
+            <label class="condition-item"><input type="checkbox" value="hypertension" /> Hypertension</label>
+            <label class="condition-item"><input type="checkbox" value="allergies" /> Allergies</label>
+            <label class="condition-item"><input type="checkbox" value="arthritis" /> Arthritis</label>
+          </div>
+        </div>
+        <button class="profile-save-btn" onclick="saveHealthProfile()">
+          <i class="fas fa-save"></i> Save Profile
+        </button>
+        <p class="profile-msg" id="profileMsg"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SYMPTOM CHECKER SECTION -->
+  <section class="symptom-section" id="symptomSection">
+    <div class="section-header">
+      <h2>🩺 Symptom Checker</h2>
+      <p>Select your symptoms and get weather-related health advice</p>
+    </div>
+    <div class="symptom-card">
+      <div class="symptom-grid">
+        <label class="symptom-item"><input type="checkbox" value="headache" /> 🤕 Headache</label>
+        <label class="symptom-item"><input type="checkbox" value="fatigue" /> 😴 Fatigue</label>
+        <label class="symptom-item"><input type="checkbox" value="shortness of breath" /> 😮‍💨 Shortness of Breath</label>
+        <label class="symptom-item"><input type="checkbox" value="dizziness" /> 🌀 Dizziness</label>
+        <label class="symptom-item"><input type="checkbox" value="nausea" /> 🤢 Nausea</label>
+        <label class="symptom-item"><input type="checkbox" value="dry skin" /> 🌵 Dry Skin</label>
+        <label class="symptom-item"><input type="checkbox" value="cough" /> 😷 Cough</label>
+        <label class="symptom-item"><input type="checkbox" value="runny nose" /> 🤧 Runny Nose</label>
+        <label class="symptom-item"><input type="checkbox" value="joint pain" /> 🦴 Joint Pain</label>
+        <label class="symptom-item"><input type="checkbox" value="chest tightness" /> 💔 Chest Tightness</label>
+        <label class="symptom-item"><input type="checkbox" value="eye irritation" /> 👁️ Eye Irritation</label>
+        <label class="symptom-item"><input type="checkbox" value="skin rash" /> 🔴 Skin Rash</label>
+      </div>
+      <button class="symptom-check-btn" onclick="checkSymptoms()">
+        <i class="fas fa-stethoscope"></i> Check Symptoms
+      </button>
+      <div class="symptom-results" id="symptomResults" style="display:none;"></div>
+    </div>
+  </section>
+
+  <!-- HEALTH TIPS SECTION -->
+  <section class="tips-section" id="tips">
+    <div class="section-header">
+      <h2>General Health Tips</h2>
+      <p>Everyday practices to stay healthy regardless of the weather</p>
+    </div>
+    <div class="tips-grid">
+      <div class="tip-card">
+        <div class="tip-icon" style="background:#e8f4fd;"><i class="fas fa-tint" style="color:#3498db;"></i></div>
+        <h3>Stay Hydrated</h3>
+        <p>Drink at least 8 glasses of water daily. Increase intake during hot or humid weather to prevent dehydration.</p>
+      </div>
+      <div class="tip-card">
+        <div class="tip-icon" style="background:#fef9e7;"><i class="fas fa-sun" style="color:#f39c12;"></i></div>
+        <h3>Sun Protection</h3>
+        <p>Apply SPF 30+ sunscreen before going outside, especially between 10am–4pm when UV rays are strongest.</p>
+      </div>
+      <div class="tip-card">
+        <div class="tip-icon" style="background:#eafaf1;"><i class="fas fa-lungs" style="color:#27ae60;"></i></div>
+        <h3>Breathe Better</h3>
+        <p>On high pollution days, limit outdoor activities. Use an air purifier indoors and keep windows closed.</p>
+      </div>
+      <div class="tip-card">
+        <div class="tip-icon" style="background:#fdf2f8;"><i class="fas fa-shirt" style="color:#8e44ad;"></i></div>
+        <h3>Dress Smart</h3>
+        <p>Layer your clothing in cold weather. Light, breathable fabrics are best in heat to regulate body temperature.</p>
+      </div>
+      <div class="tip-card">
+        <div class="tip-icon" style="background:#fdedec;"><i class="fas fa-heart-pulse" style="color:#e74c3c;"></i></div>
+        <h3>Monitor Your Health</h3>
+        <p>People with asthma, heart disease, or diabetes should pay extra attention to weather changes that can trigger symptoms.</p>
+      </div>
+      <div class="tip-card">
+        <div class="tip-icon" style="background:#eaf4fb;"><i class="fas fa-bed" style="color:#2980b9;"></i></div>
+        <h3>Rest Well</h3>
+        <p>Maintain 7–9 hours of sleep. Extreme temperatures can disrupt sleep — keep your bedroom cool and comfortable.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ABOUT SECTION -->
+  <section class="about-section" id="about">
+    <div class="about-content">
+      <div class="about-text">
+        
+        <h2>About This Application</h2>
+        <p>WeatherHealth is a final year Computer Science project developed to address the growing need for weather-aware health information. The system integrates real-time meteorological data with user health profiles to generate targeted health advisories.</p>
+        <p>The application retrieves live weather parameters including temperature, humidity, UV index, wind speed, and air quality index through the OpenWeatherMap API, and applies a rule-based advisory engine to produce relevant health recommendations for each user.</p>
+        
+        <div class="about-tags">
+          <span>HTML & CSS</span>
+          <span>JavaScript</span>
+          <span>Node.js</span>
+          <span>OpenWeatherMap API</span>
+        </div>
+      </div>
+      <div class="about-stats">
+        <div class="about-stat">
+          <h3>Real-Time</h3>
+          <p>Live weather data updated every call</p>
+        </div>
+        <div class="about-stat">
+          <h3>Smart</h3>
+          <p>Condition-based health advisory engine</p>
+        </div>
+        <div class="about-stat">
+          <h3>Accessible</h3>
+          <p>Designed for the general public</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-brand">
+      <i class="fas fa-cloud-sun"></i>
+      <span>WeatherHealth</span>
+    </div>
+   <p>Final Year Project &mdash; Computer Science &copy; 2026</p>
+    <p>Weather data provided by <a href="https://openweathermap.org" target="_blank">OpenWeatherMap</a></p>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

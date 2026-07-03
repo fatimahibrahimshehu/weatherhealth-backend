@@ -9,6 +9,7 @@ const Search = require("./models/Search");
 const Favorite = require("./models/Favorite");
 const HealthProfile = require("./models/HealthProfile");
 const authRoutes = require("./routes/auth");
+const path = require("path");
 
 dotenv.config();
 
@@ -447,14 +448,14 @@ app.get("/api/admin/stats", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch admin stats" });
   }
 });
+// =============================================
+//  SERVE FRONTEND
+// =============================================
+app.use(express.static(path.join(__dirname, "public")));
 
-// =============================================
-//  ROUTE: Health Check
-// =============================================
 app.get("/", (req, res) => {
-  res.json({ message: "WeatherHealth API is running!" });
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
-
 // =============================================
 //  START SERVER
 // =============================================
