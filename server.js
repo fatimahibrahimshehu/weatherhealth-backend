@@ -406,6 +406,15 @@ app.get("/api/report", async (req, res) => {
   }
 });
 // =============================================
+//  ROUTE: Test Environment Variables
+// =============================================
+app.get("/api/admin/test", (req, res) => {
+  res.json({
+    adminUsername: process.env.ADMIN_USERNAME ? "SET" : "NOT SET",
+    adminPassword: process.env.ADMIN_PASSWORD ? "SET" : "NOT SET",
+  });
+});
+// =============================================
 //  ROUTE: Admin Login
 // =============================================
 app.post("/api/admin/login", (req, res) => {
