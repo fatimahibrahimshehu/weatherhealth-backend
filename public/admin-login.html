@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>WeatherHealth — Admin Login</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="auth.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Sora:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+</head>
+<body>
+
+  <div class="auth-wrapper">
+    <div class="auth-card">
+      <div class="auth-brand">
+        <i class="fas fa-cloud-sun"></i>
+        <span>WeatherHealth</span>
+      </div>
+
+      <div style="text-align:center; margin-bottom: 20px;">
+        <div style="width:56px; height:56px; background:#1a6fb3; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 12px;">
+          <i class="fas fa-shield-halved" style="color:white; font-size:1.4rem;"></i>
+        </div>
+        <h2 style="font-family:'Sora',sans-serif; font-size:1.2rem; color:#1a2a3a;">Admin Portal</h2>
+        <p style="color:#6b8096; font-size:0.85rem;">Sign in with your admin credentials</p>
+      </div>
+
+      <form id="adminLoginForm" class="auth-form">
+        <p class="auth-msg" id="adminMsg"></p>
+
+        <label>Admin Username</label>
+        <input type="text" id="adminUsername" placeholder="Enter admin username" required />
+
+        <label>Admin Password</label>
+        <input type="password" id="adminPassword" placeholder="Enter admin password" required />
+
+        <button type="submit" class="auth-btn" id="adminLoginBtn">
+          <i class="fas fa-lock"></i> Sign In as Admin
+        </button>
+      </form>
+
+      <p class="auth-footer-text" style="margin-top: 20px;">
+        <a href="index.html"><i class="fas fa-arrow-left"></i> Back to App</a>
+      </p>
+    </div>
+  </div>
+
+  <script>
+    const BACKEND = "https://weatherhealth-backend.vercel.app";
+
+    // Check if already logged in as admin
+    if (localStorage.getItem("adminToken")) {
+      window.location.href = "admin.html";
+    }
+
+    document.getElementById("adminLoginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const username = document.getElementById("adminUsername").value.trim();
+      const password = document.getElementById("adminPassword").value;
+      const msg = document.getElementById("adminMsg");
+      const btn = document.getElementById("adminLoginBtn");
+
+      msg.textContent = "";
+      btn.disabled = true;
+      btn.textContent = "Signing in...";
+
+      try {
+        const res = await fetch(`${BACKEND}/api/admin/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.error || "Login failed");
+        }
+
+        localStorage.setItem("adminToken", data.token);
+
+        msg.textContent = "Login successful! Redirecting...";
+        msg.className = "auth-msg success";
+
+        setTimeout(() => {
+          window.location.href = "admin.html";
+        }, 1000);
+
+      } catch (err) {
+        msg.textContent = err.message;
+        msg.className = "auth-msg error";
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-lock"></i> Sign In as Admin';
+      }
+    });
+  </script>
+
+</body>
+</html>

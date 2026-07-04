@@ -406,6 +406,26 @@ app.get("/api/report", async (req, res) => {
   }
 });
 // =============================================
+//  ROUTE: Admin Login
+// =============================================
+app.post("/api/admin/login", (req, res) => {
+  const { username, password } = req.body;
+
+  if (
+    username === process.env.ADMIN_USERNAME &&
+    password === process.env.ADMIN_PASSWORD
+  ) {
+    const token = jwt.sign(
+      { role: "admin", username },
+      process.env.JWT_SECRET,
+      { expiresIn: "24h" }
+    );
+    res.json({ message: "Admin login successful", token });
+  } else {
+    res.status(401).json({ error: "Invalid admin credentials" });
+  }
+});
+// =============================================
 //  ROUTE: Admin Dashboard Stats
 // =============================================
 app.get("/api/admin/stats", async (req, res) => {
