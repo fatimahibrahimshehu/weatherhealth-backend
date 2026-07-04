@@ -420,6 +420,9 @@ app.get("/api/admin/test", (req, res) => {
 app.post("/api/admin/login", (req, res) => {
   const { username, password } = req.body;
 
+  console.log("Login attempt:", username, password);
+  console.log("Expected:", process.env.ADMIN_USERNAME, process.env.ADMIN_PASSWORD);
+
   if (
     username === process.env.ADMIN_USERNAME &&
     password === process.env.ADMIN_PASSWORD
