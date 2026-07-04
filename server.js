@@ -5,6 +5,7 @@ const dotenv = require("dotenv");
 const mongoose = require("mongoose");
 const nodemailer = require("nodemailer");
 const PDFDocument = require("pdfkit");
+const jwt = require("jsonwebtoken");
 const Search = require("./models/Search");
 const Favorite = require("./models/Favorite");
 const HealthProfile = require("./models/HealthProfile");
