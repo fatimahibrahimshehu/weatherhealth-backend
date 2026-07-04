@@ -67,11 +67,7 @@
       btn.textContent = "Signing in...";
 
       try {
-        const res = await fetch(`${BACKEND}/api/admin/login`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username, password }),
-        });
+       const res = await fetch(`/api/admin/login?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`);
 
         const data = await res.json();
 
