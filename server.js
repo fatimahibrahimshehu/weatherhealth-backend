@@ -417,8 +417,8 @@ app.get("/api/admin/test", (req, res) => {
 // =============================================
 //  ROUTE: Admin Login
 // =============================================
-app.post("/api/admin/login", (req, res) => {
-  const { username, password } = req.body;
+app.get("/api/admin/login", (req, res) => {
+  const { username, password } = req.query;
 
   console.log("Login attempt:", username, password);
   console.log("Expected:", process.env.ADMIN_USERNAME, process.env.ADMIN_PASSWORD);
