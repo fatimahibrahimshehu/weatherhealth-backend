@@ -484,26 +484,6 @@ app.get("/api/admin/stats", async (req, res) => {
 //  SERVE FRONTEND
 // =============================================
 app.use(express.static(path.join(__dirname, "public")));
-
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
-});
-
-app.get("/admin.html", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "admin.html"));
-});
-
-app.get("/admin-login.html", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "admin-login.html"));
-});
-
-app.get("/auth.html", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "auth.html"));
-});
-
-app.get("/profile.html", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "profile.html"));
-});
 // =============================================
 //  START SERVER
 // =============================================
