@@ -47,8 +47,6 @@
   </div>
 
   <script>
-    const BACKEND = "";
-
     // Check if already logged in as admin
     if (localStorage.getItem("adminToken")) {
       window.location.href = "admin.html";
@@ -67,7 +65,7 @@
       btn.textContent = "Signing in...";
 
       try {
-     const res = await fetch(`https://weatherhealth-backend.vercel.app/api/admin/login?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`);
+        const res = await fetch(`https://weatherhealth-backend.vercel.app/api/admin/login?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`);
         const data = await res.json();
 
         if (!res.ok) {
