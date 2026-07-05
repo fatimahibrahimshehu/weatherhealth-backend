@@ -64,23 +64,18 @@
       btn.disabled = true;
       btn.textContent = "Signing in...";
 
-      try {
-        const res = await fetch(`https://weatherhealth-backend.vercel.app/api/admin/login?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`);
-        const data = await res.json();
-
-        if (!res.ok) {
-          throw new Error(data.error || "Login failed");
+     try {
+        // Simple credential check
+        if (username === "admin" && password === "weatherhealth@admin2026") {
+          localStorage.setItem("adminToken", "admin-authenticated");
+          msg.textContent = "Login successful! Redirecting...";
+          msg.className = "auth-msg success";
+          setTimeout(() => {
+            window.location.href = "admin.html";
+          }, 1000);
+        } else {
+          throw new Error("Invalid admin credentials");
         }
-
-        localStorage.setItem("adminToken", data.token);
-
-        msg.textContent = "Login successful! Redirecting...";
-        msg.className = "auth-msg success";
-
-        setTimeout(() => {
-          window.location.href = "admin.html";
-        }, 1000);
-
       } catch (err) {
         msg.textContent = err.message;
         msg.className = "auth-msg error";
