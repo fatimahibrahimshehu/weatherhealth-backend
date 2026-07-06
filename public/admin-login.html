@@ -1,1 +1,28 @@
-<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Admin Login</title><link rel="stylesheet" href="style.css"/><link rel="stylesheet" href="auth.css"/></head><body><div class="auth-wrapper"><div class="auth-card"><div class="auth-brand"><span>WeatherHealth Admin</span></div><form id="f" class="auth-form"><p id="m" class="auth-msg"></p><label>Username</label><input id="u" type="text" required/><label>Password</label><input id="p" type="password" required/><button type="submit" class="auth-btn">Sign In</button></form><p class="auth-footer-text"><a href="index.html">Back to App</a></p></div></div><script>if(localStorage.getItem("adminToken")){window.location.href="admin.html";}document.getElementById("f").onsubmit=function(e){e.preventDefault();var u=document.getElementById("u").value;var p=document.getElementById("p").value;var m=document.getElementById("m");if(u==="admin"&&p==="weatherhealth@admin2026"){localStorage.setItem("adminToken","ok");m.textContent="Redirecting...";m.style.color="#27ae60";setTimeout(function(){window.location.href="admin.html";},1000);}else{m.textContent="Invalid credentials";m.style.color="#e05a5a";}};</script></body></html>
+<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Admin Login</title><link rel="stylesheet" href="style.css"/><link rel="stylesheet" href="auth.css"/></head><body><div class="auth-wrapper"><div class="auth-card"><div class="auth-brand"><span>WeatherHealth Admin</span></div><form id="f" class="auth-form"><p id="m" class="auth-msg"></p><label>Username</label><input id="u" type="text" required/><label>Password</label><input id="p" type="password" required/><button type="submit" class="auth-btn">Sign In</button></form><p class="auth-footer-text"><a href="index.html">Back to App</a></p></div></div><script>
+var API_BASE = "https://weatherhealth-backend.vercel.app";
+if(localStorage.getItem("adminToken")){window.location.href="admin.html";}
+document.getElementById("f").onsubmit=async function(e){
+  e.preventDefault();
+  var u=document.getElementById("u").value;
+  var p=document.getElementById("p").value;
+  var m=document.getElementById("m");
+  m.textContent="Checking...";
+  m.style.color="#888";
+  try{
+    var res=await fetch(API_BASE+"/api/admin/login?username="+encodeURIComponent(u)+"&password="+encodeURIComponent(p));
+    var data=await res.json();
+    if(res.ok){
+      localStorage.setItem("adminToken",data.token);
+      m.textContent="Redirecting...";
+      m.style.color="#27ae60";
+      setTimeout(function(){window.location.href="admin.html";},800);
+    }else{
+      m.textContent=data.error||"Invalid credentials";
+      m.style.color="#e05a5a";
+    }
+  }catch(err){
+    m.textContent="Could not connect to server.";
+    m.style.color="#e05a5a";
+  }
+};
+</script></body></html>

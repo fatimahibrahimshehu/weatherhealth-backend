@@ -439,9 +439,20 @@ app.get("/api/admin/login", (req, res) => {
   }
 });
 // =============================================
-//  ROUTE: Admin Dashboard Stats
+//  ROUTE: Admin Dashboard Stats (PROTECTED)
 // =============================================
 app.get("/api/admin/stats", async (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "No token provided" });
+  }
+  const token = authHeader.split(" ")[1];
+  try {
+    jwt.verify(token, process.env.JWT_SECRET);
+  } catch (err) {
+    return res.status(403).json({ error: "Invalid or expired token" });
+  }
+
   try {
     const User = require("./models/User");
 
