@@ -8,35 +8,7 @@
   ],
   "routes": [
     {
-      "src": "/api/(.*)",
-      "dest": "server.js"
-    },
-    {
-      "src": "/",
-      "dest": "server.js"
-    },
-    {
-      "src": "/auth.html",
-      "dest": "server.js"
-    },
-    {
-      "src": "/admin.html",
-      "dest": "server.js"
-    },
-    {
-      "src": "/admin-login.html",
-      "dest": "server.js"
-    },
-    {
-      "src": "/profile.html",
-      "dest": "server.js"
-    },
-    {
-      "src": "/(.*\\.css)",
-      "dest": "server.js"
-    },
-    {
-      "src": "/(.*\\.js)",
+      "src": "/(.*)",
       "dest": "server.js"
     }
   ]
