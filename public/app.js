@@ -3,7 +3,7 @@
 //  Replace YOUR_API_KEY with your OpenWeatherMap key
 // =============================================
 
-const BASE_URL = "https://weatherhealth-backend.onrender.com/api/weather";
+const BASE_URL = "https://weatherhealth-backend.vercel.app/api/weather";
 // =============================================
 //  USER AUTH CHECK
 // =============================================
@@ -352,7 +352,7 @@ function toggleMenu() {
 // =============================================
 async function loadSearchHistory() {
   try {
-    const res = await fetch("https://weatherhealth-backend.onrender.com/api/history");
+    const res = await fetch("https://weatherhealth-backend.vercel.app/api/history");
     const history = await res.json();
 
     const historySection = document.getElementById("historySection");
@@ -409,7 +409,7 @@ loadSearchHistory();
 // =============================================
 async function loadForecast(city) {
   try {
-    const res = await fetch(`https://weatherhealth-backend.onrender.com/api/forecast?city=${encodeURIComponent(city)}`);
+    const res = await fetch(`https://weatherhealth-backend.vercel.app/api/forecast?city=${encodeURIComponent(city)}`);
     const data = await res.json();
 
     if (!res.ok) {
@@ -451,7 +451,7 @@ async function addToFavorites() {
   if (!currentUser || !currentCity) return;
 
   try {
-    const res = await fetch("https://weatherhealth-backend.onrender.com/api/favorites", {
+    const res = await fetch("https://weatherhealth-backend.vercel.app/api/favorites", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId: currentUser.id, city: currentCity }),
@@ -476,7 +476,7 @@ async function checkIfFavorited(city) {
   if (!currentUser) return;
 
   try {
-    const res = await fetch(`https://weatherhealth-backend.onrender.com/api/favorites/${currentUser.id}`);
+    const res = await fetch(`https://weatherhealth-backend.vercel.app/api/favorites/${currentUser.id}`);
     const favorites = await res.json();
 
     const btn = document.getElementById("favoriteBtn");
@@ -498,7 +498,7 @@ async function loadFavorites() {
   if (!currentUser) return;
 
   try {
-    const res = await fetch(`https://weatherhealth-backend.onrender.com/api/favorites/${currentUser.id}`);
+    const res = await fetch(`https://weatherhealth-backend.vercel.app/api/favorites/${currentUser.id}`);
     const favorites = await res.json();
 
     const favoritesSection = document.getElementById("favoritesSection");
@@ -536,7 +536,7 @@ function searchFavorite(city) {
 async function removeFavorite(id, event) {
   event.stopPropagation();
   try {
-    await fetch(`https://weatherhealth-backend.onrender.com/api/favorites/${id}`, { method: "DELETE" });
+    await fetch(`https://weatherhealth-backend.vercel.app/api/favorites/${id}`, { method: "DELETE" });
     loadFavorites();
   } catch (error) {
     console.log("Could not remove favorite:", error);
@@ -576,7 +576,7 @@ if (localStorage.getItem("darkMode") === "enabled") {
 // =============================================
 async function loadAirQuality(lat, lon, city) {
   try {
-    const res = await fetch(`https://weatherhealth-backend.onrender.com/api/airquality?lat=${lat}&lon=${lon}`);
+    const res = await fetch(`https://weatherhealth-backend.vercel.app/api/airquality?lat=${lat}&lon=${lon}`);
     const data = await res.json();
 
     if (!res.ok) {
@@ -624,12 +624,10 @@ function getLocationWeather() {
       const { latitude, longitude } = position.coords;
 
       try {
-        const res = await fetch(
-          `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=ed4a011be27dada8b0db974aea922485&units=metric`
-        );
+        const res = await fetch(`https://weatherhealth-backend.vercel.app/api/weather?lat=${latitude}&lon=${longitude}`);
         const data = await res.json();
 
-        cityInput.value = data.name;
+        cityInput.value = data.city;
         getWeather();
 
       } catch (error) {
@@ -651,7 +649,7 @@ function getLocationWeather() {
 // =============================================
 async function loadUVIndex(lat, lon, city) {
   try {
-    const res = await fetch(`https://weatherhealth-backend.onrender.com/api/uvindex?lat=${lat}&lon=${lon}`);
+    const res = await fetch(`https://weatherhealth-backend.vercel.app/api/uvindex?lat=${lat}&lon=${lon}`);
     const data = await res.json();
 
     if (!res.ok) {
@@ -677,7 +675,7 @@ async function loadUVIndex(lat, lon, city) {
 // =============================================
 async function loadHourlyForecast(city) {
   try {
-    const res = await fetch(`https://weatherhealth-backend.onrender.com/api/hourly?city=${encodeURIComponent(city)}`);
+    const res = await fetch(`https://weatherhealth-backend.vercel.app/api/hourly?city=${encodeURIComponent(city)}`);
     const data = await res.json();
 
     if (!res.ok) {
@@ -721,7 +719,7 @@ async function saveHealthProfile() {
   const msg = document.getElementById("profileMsg");
 
   try {
-    const res = await fetch("https://weatherhealth-backend.onrender.com/api/healthprofile", {
+    const res = await fetch("https://weatherhealth-backend.vercel.app/api/healthprofile", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -751,7 +749,7 @@ async function loadHealthProfile() {
   if (!currentUser) return;
 
   try {
-    const res = await fetch(`https://weatherhealth-backend.onrender.com/api/healthprofile/${currentUser.id}`);
+    const res = await fetch(`https://weatherhealth-backend.vercel.app/api/healthprofile/${currentUser.id}`);
 
     if (!res.ok) return;
 
@@ -851,7 +849,7 @@ async function sendWeatherEmail() {
       wind_speed: document.getElementById("cardWind").textContent.replace(" m/s", ""),
     };
 
-    const res = await fetch("https://weatherhealth-backend.onrender.com/api/sendemail", {
+    const res = await fetch("https://weatherhealth-backend.vercel.app/api/sendemail", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -1052,7 +1050,7 @@ function downloadPDFReport() {
   btn.disabled = true;
 
   const link = document.createElement("a");
-  link.href = `https://weatherhealth-backend.onrender.com/api/report?city=${encodeURIComponent(currentCity)}`;
+  link.href = `https://weatherhealth-backend.vercel.app/api/report?city=${encodeURIComponent(currentCity)}`;
   link.download = `WeatherHealth_${currentCity}_Report.pdf`;
   document.body.appendChild(link);
   link.click();
@@ -1236,7 +1234,7 @@ let tempChartInstance = null;
 
 async function loadTemperatureChart(city) {
   try {
-    const res = await fetch(`https://weatherhealth-backend.onrender.com/api/hourly?city=${encodeURIComponent(city)}`);
+    const res = await fetch(`https://weatherhealth-backend.vercel.app/api/hourly?city=${encodeURIComponent(city)}`);
     const data = await res.json();
 
     if (!res.ok || !data.hourly || data.hourly.length === 0) {
@@ -1318,7 +1316,7 @@ async function loadTemperatureChart(city) {
 
 async function loadTemperatureChart(city) {
   try {
-    const res = await fetch(`https://weatherhealth-backend.onrender.com/api/hourly?city=${encodeURIComponent(city)}`);
+    const res = await fetch(`https://weatherhealth-backend.vercel.app/api/hourly?city=${encodeURIComponent(city)}`);
     const data = await res.json();
 
     if (!res.ok) {
@@ -1401,3 +1399,6 @@ async function loadTemperatureChart(city) {
     console.log("Could not load temperature chart:", error);
   }
 }
+
+
+

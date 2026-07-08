@@ -1,4 +1,4 @@
-const API_BASE = "https://weatherhealth-backend.onrender.com/api/auth";
+const API_BASE = "https://weatherhealth-backend.vercel.app/api/auth";
 
 // ---- Tab Switching ----
 function switchTab(tab) {
