@@ -81,12 +81,18 @@ const transporter = nodemailer.createTransport({
 //  ROUTE: Get Weather by City
 // =============================================
 app.get("/api/weather", async (req, res) => {
-  const { city } = req.query;
-  if (!city) return res.status(400).json({ error: "City name is required" });
+  const { city, lat, lon } = req.query;
+  if (!city && !(lat && lon)) {
+    return res.status(400).json({ error: "City name or coordinates (lat & lon) are required" });
+  }
 
   try {
+    const params = lat && lon
+      ? { lat, lon, appid: process.env.API_KEY, units: "metric" }
+      : { q: city, appid: process.env.API_KEY, units: "metric" };
+
     const response = await axios.get(`https://api.openweathermap.org/data/2.5/weather`, {
-      params: { q: city, appid: process.env.API_KEY, units: "metric" },
+      params,
     });
     const data = response.data;
    const sunrise = new Date(data.sys.sunrise * 1000).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
