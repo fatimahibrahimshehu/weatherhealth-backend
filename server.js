@@ -20,15 +20,51 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use("/api/auth", authRoutes);
 
 // =============================================
-//  CONNECT TO MONGODB
+//  CONNECT TO MONGODB (cached for serverless environments)
 // =============================================
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => console.log("✅ MongoDB Connected Successfully"))
-  .catch((err) => console.log("❌ MongoDB Connection Error:", err));
+// On platforms like Vercel, each "cold start" re-runs this file. Without
+// caching, every request could try to open a brand new DB connection,
+// which is slow and sometimes fails before it finishes connecting.
+// This caches the connection so warm invocations reuse it instantly,
+// and makes every route wait for a ready connection before querying.
+let cachedConnection = global._mongooseConnection;
+
+async function connectDB() {
+  if (cachedConnection && mongoose.connection.readyState === 1) {
+    return cachedConnection;
+  }
+  if (!cachedConnection) {
+    cachedConnection = mongoose
+      .connect(process.env.MONGO_URI, {
+        serverSelectionTimeoutMS: 20000,
+      })
+      .then((conn) => {
+        console.log("✅ MongoDB Connected Successfully");
+        return conn;
+      })
+      .catch((err) => {
+        console.log("❌ MongoDB Connection Error:", err.message);
+        cachedConnection = null;
+        throw err;
+      });
+    global._mongooseConnection = cachedConnection;
+  }
+  return cachedConnection;
+}
+
+// Make sure every /api request waits for a ready DB connection first
+app.use("/api", async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    res.status(503).json({ error: "Database unavailable, please try again shortly" });
+  }
+});
+
+app.use("/api/auth", authRoutes);
 
 // =============================================
 //  EMAIL SETUP
