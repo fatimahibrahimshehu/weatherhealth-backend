@@ -367,12 +367,12 @@ async function generateAdvisory(data) {
     });
   }
 
-  if (has("allergies") && (wind >= 14 || desc.includes("haze") || desc.includes("dust"))) {
+  if (has("allergies") && (wind >= 14 || humidity >= 70 || desc.includes("haze") || desc.includes("dust"))) {
     advisories.push({
       icon: "🤧",
       iconBg: "#f0f6ff",
       title: "Allergy Alert — For You",
-      message: "Windy or dusty conditions can carry more allergens today. Based on your health profile, keep windows closed, consider a mask outdoors, and have antihistamines on hand if needed.",
+      message: "Windy, humid, or dusty conditions can carry more allergens today. Based on your health profile, keep windows closed, consider a mask outdoors, and have antihistamines on hand if needed.",
       level: "warning",
       badge: "🟡 Personalized Advice",
       badgeBg: "#fef9e7",
