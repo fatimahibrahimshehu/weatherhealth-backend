@@ -29,6 +29,8 @@ checkLoginStatus();
 let currentUser = JSON.parse(localStorage.getItem("user"));
 let currentCity = "";
 let userConditions = [];
+let userAge = null;
+let userActivityLevel = null;
 // ---- DOM References ----
 const cityInput   = document.getElementById("cityInput");
 const searchHint  = document.getElementById("searchHint");
@@ -118,18 +120,24 @@ weatherCard.style.display = "block";
 }
 
 // =============================================
-//  USER HEALTH CONDITIONS (for personalized advisories)
+//  USER HEALTH PROFILE (for personalized advisories)
+//  Fetches conditions, age, and activity level — all captured on the
+//  profile form but previously unused by the advisory engine.
 // =============================================
-async function getUserConditions() {
-  if (!currentUser) return [];
+async function getUserHealthProfile() {
+  if (!currentUser) return { conditions: [], age: null, activityLevel: null };
   try {
     const res = await fetch(`https://weatherhealth-backend.vercel.app/api/healthprofile/${currentUser.id}`);
-    if (!res.ok) return [];
+    if (!res.ok) return { conditions: [], age: null, activityLevel: null };
     const profile = await res.json();
-    return profile.conditions || [];
+    return {
+      conditions: profile.conditions || [],
+      age: profile.age || null,
+      activityLevel: profile.activityLevel || null,
+    };
   } catch (error) {
-    console.log("Could not load health conditions for personalization:", error);
-    return [];
+    console.log("Could not load health profile for personalization:", error);
+    return { conditions: [], age: null, activityLevel: null };
   }
 }
 
@@ -145,9 +153,15 @@ async function generateAdvisory(data) {
   const desc     = data.condition.toLowerCase();
   const advisories = [];
 
-  // Refresh the user's saved health conditions each time so profile edits take effect immediately
-  userConditions = await getUserConditions();
+  // Refresh the user's saved health profile each time so profile edits take effect immediately
+  const profile = await getUserHealthProfile();
+  userConditions = profile.conditions;
+  userAge = profile.age;
+  userActivityLevel = profile.activityLevel;
   const has = (condition) => userConditions.includes(condition);
+  const isElderly = userAge !== null && userAge >= 60;
+  const isChild = userAge !== null && userAge <= 12;
+  const isHighlyActive = userActivityLevel !== null && /high|active|intense/i.test(userActivityLevel);
 
   // --- Temperature Advisories ---
   if (temp >= 38) {
@@ -380,7 +394,61 @@ async function generateAdvisory(data) {
     });
   }
 
-  // Fallback if nothing matched
+  // --- PERSONALIZED Advisories based on age ---
+  if (isElderly && temp >= 30) {
+    advisories.push({
+      icon: "👴",
+      iconBg: "#fdedec",
+      title: "Heat Advisory for Older Adults — For You",
+      message: `Based on your profile (age ${userAge}), older adults are more vulnerable to heat-related illness even at moderately high temperatures. Avoid the midday sun, drink water regularly even without feeling thirsty, and check in with someone if you'll be alone outdoors.`,
+      level: "danger",
+      badge: "🔴 Personalized Warning",
+      badgeBg: "#fdedec",
+      badgeColor: "#c0392b"
+    });
+  }
+
+  if (isElderly && temp <= 15) {
+    advisories.push({
+      icon: "🧣",
+      iconBg: "#eaf4fb",
+      title: "Cold Advisory for Older Adults — For You",
+      message: `Based on your profile (age ${userAge}), older adults lose body heat faster and are at higher risk of cold-related complications. Dress warmly indoors and out, and keep your living space adequately heated.`,
+      level: "warning",
+      badge: "🟡 Personalized Advice",
+      badgeBg: "#fef9e7",
+      badgeColor: "#d68910"
+    });
+  }
+
+  if (isChild && (temp >= 33 || temp <= 10)) {
+    advisories.push({
+      icon: "🧒",
+      iconBg: "#eaf4fb",
+      title: "Weather Advisory for Children — For You",
+      message: `Based on your profile (age ${userAge}), children regulate body temperature less efficiently than adults. Limit time outdoors during extreme conditions and dress appropriately for the weather.`,
+      level: "warning",
+      badge: "🟡 Personalized Advice",
+      badgeBg: "#fef9e7",
+      badgeColor: "#d68910"
+    });
+  }
+
+  // --- PERSONALIZED Advisory based on activity level ---
+  if (isHighlyActive && (temp >= 33 || humidity >= 80)) {
+    advisories.push({
+      icon: "🏃",
+      iconBg: "#fef9e7",
+      title: "High Activity Heat Advisory — For You",
+      message: "Based on your profile's activity level, intense exercise in hot or humid conditions significantly increases dehydration and heat exhaustion risk. Consider training earlier or later in the day, and increase your fluid intake beyond usual.",
+      level: "warning",
+      badge: "🟡 Personalized Advice",
+      badgeBg: "#fef9e7",
+      badgeColor: "#d68910"
+    });
+  }
+
+
   if (advisories.length === 0) {
     advisories.push({
       icon: "✅",
@@ -714,15 +782,25 @@ async function loadAirQuality(lat, lon, city) {
 
 function addPersonalizedAqiAdvisory(aqi) {
   if (aqi < 3) return; // only warn from "Moderate" (3) upward
-  if (!userConditions || userConditions.length === 0) return;
   if (!advisoryGrid || advisorySection.style.display === "none") return;
 
   const sensitiveConditions = ["asthma", "heart disease"];
-  const affected = userConditions.filter(c => sensitiveConditions.includes(c));
-  if (affected.length === 0) return;
+  const affected = (userConditions || []).filter(c => sensitiveConditions.includes(c));
+  const isHighlyActive = userActivityLevel !== null && /high|active|intense/i.test(userActivityLevel || "");
+
+  if (affected.length === 0 && !isHighlyActive) return;
 
   // Avoid adding a duplicate card if one already exists for this search
   if (document.getElementById("personalizedAqiCard")) return;
+
+  let reason;
+  if (affected.length > 0 && isHighlyActive) {
+    reason = `your health profile (${affected.join(", ")}) and your high activity level`;
+  } else if (affected.length > 0) {
+    reason = `your health profile (${affected.join(", ")})`;
+  } else {
+    reason = "your high activity level, which means more air is breathed in during exercise";
+  }
 
   const card = document.createElement("div");
   card.id = "personalizedAqiCard";
@@ -730,7 +808,7 @@ function addPersonalizedAqiAdvisory(aqi) {
   card.innerHTML = `
     <div class="advisory-card-icon" style="background:#fdedec; font-size:1.5rem;">🌫️</div>
     <h3>Air Quality Alert — For You</h3>
-    <p>Based on your health profile (${affected.join(", ")}), today's air quality (AQI ${aqi}) may affect you more than most people. Limit time outdoors, keep windows closed, and keep any prescribed medication close by.</p>
+    <p>Based on ${reason}, today's air quality (AQI ${aqi}) may affect you more than most people. Limit time outdoors, keep windows closed, and keep any prescribed medication close by.</p>
     <span class="advisory-badge" style="background:#fdedec; color:#c0392b;">🔴 Personalized Warning</span>
   `;
   advisoryGrid.appendChild(card);
@@ -865,6 +943,8 @@ async function saveHealthProfile() {
       msg.textContent = "✅ Health profile saved successfully!";
       msg.style.color = "#27ae60";
       userConditions = conditions; // keep in sync so the next advisory search uses the update immediately
+      userAge = parseInt(age) || null;
+      userActivityLevel = activityLevel || null;
     } else {
       msg.textContent = "❌ Failed to save profile. Try again.";
       msg.style.color = "#e05a5a";
