@@ -7,12 +7,6 @@
   <link rel="stylesheet" href="style.css" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Sora:wght@400;600;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
-  <link rel="manifest" href="/manifest.json">
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="WeatherHealth">
-  <meta name="theme-color" content="#1a6fb3">
 </head>
 <body>
 
@@ -35,7 +29,7 @@
       <li><a href="#home" class="active">Home</a></li>
       <li><a href="#tips">Health Tips</a></li>
       <li><a href="#about">About</a></li>
-      <li><a href="admin.html">Admin</a></li>
+     <li><a href="admin-login.html">Admin</a></li>c
     </ul>
     <div class="user-info" id="userInfo">
       <span id="welcomeText" onclick="window.location.href='profile.html'" style="cursor:pointer;" title="View Profile"></span>
@@ -277,6 +271,12 @@
             <label class="condition-item"><input type="checkbox" value="hypertension" /> Hypertension</label>
             <label class="condition-item"><input type="checkbox" value="allergies" /> Allergies</label>
             <label class="condition-item"><input type="checkbox" value="arthritis" /> Arthritis</label>
+            <label class="condition-item"><input type="checkbox" value="pregnancy" /> Pregnancy</label>
+            <label class="condition-item"><input type="checkbox" value="obesity" /> Obesity</label>
+            <label class="condition-item"><input type="checkbox" value="kidney disease" /> Kidney Disease</label>
+            <label class="condition-item"><input type="checkbox" value="migraine" /> Migraine / Chronic Headaches</label>
+            <label class="condition-item"><input type="checkbox" value="sickle cell disease" /> Sickle Cell Disease</label>
+            <label class="condition-item"><input type="checkbox" value="skin conditions" /> Skin Conditions (Eczema/Psoriasis)</label>
           </div>
         </div>
         <button class="profile-save-btn" onclick="saveHealthProfile()">
