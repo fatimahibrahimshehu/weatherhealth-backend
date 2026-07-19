@@ -31,6 +31,7 @@ let currentCity = "";
 let userConditions = [];
 let userAge = null;
 let userActivityLevel = null;
+let lastWeatherData = null;
 // ---- DOM References ----
 const cityInput   = document.getElementById("cityInput");
 const searchHint  = document.getElementById("searchHint");
@@ -139,6 +140,91 @@ async function getUserHealthProfile() {
     console.log("Could not load health profile for personalization:", error);
     return { conditions: [], age: null, activityLevel: null };
   }
+}
+
+// =============================================
+//  HEALTH RISK SCORE
+//  Combines weather severity, air quality, and the user's personal risk
+//  factors (conditions, age, activity level) into a single 0-100 score.
+//  This is a weighted rule-based score, not machine learning — but it
+//  gives a single, easy-to-read "how risky is today, for you" figure.
+// =============================================
+function computeRiskScore(data, aqi) {
+  const temp = data.temperature;
+  const humidity = data.humidity;
+  const wind = data.wind_speed;
+  const desc = (data.condition || "").toLowerCase();
+
+  let score = 0;
+
+  // --- Weather severity ---
+  if (temp >= 38) score += 35;
+  else if (temp >= 33) score += 25;
+  else if (temp >= 25) score += 5;
+  else if (temp < 10) score += 20;
+
+  if (humidity >= 80) score += 15;
+  else if (humidity < 30) score += 10;
+
+  if (wind >= 14) score += 10;
+
+  if (desc.includes("thunder") || desc.includes("storm")) score += 20;
+  else if (desc.includes("snow")) score += 10;
+  else if (desc.includes("fog") || desc.includes("mist") || desc.includes("haze")) score += 8;
+
+  // --- Air quality (added once AQI has loaded) ---
+  if (aqi !== null && aqi !== undefined) {
+    if (aqi >= 5) score += 25;
+    else if (aqi >= 4) score += 18;
+    else if (aqi >= 3) score += 10;
+    else if (aqi >= 2) score += 3;
+  }
+
+  // --- Personal risk factors ---
+  const conditionCount = (userConditions || []).length;
+  score += Math.min(conditionCount * 6, 24);
+
+  if ((userAge !== null && userAge >= 60) || (userAge !== null && userAge <= 12)) {
+    score += 10;
+  }
+
+  if (userActivityLevel !== null && /high|active|intense/i.test(userActivityLevel)) {
+    score += 5;
+  }
+
+  return Math.max(0, Math.min(100, Math.round(score)));
+}
+
+function getRiskLevel(score) {
+  if (score >= 71) return { label: "Severe", color: "#c0392b", bg: "#fdedec" };
+  if (score >= 46) return { label: "High", color: "#d68910", bg: "#fef9e7" };
+  if (score >= 21) return { label: "Moderate", color: "#2980b9", bg: "#eaf4fb" };
+  return { label: "Low", color: "#1e8449", bg: "#eafaf1" };
+}
+
+function renderRiskScore(score, city) {
+  const level = getRiskLevel(score);
+  let banner = document.getElementById("riskScoreBanner");
+
+  if (!banner) {
+    banner = document.createElement("div");
+    banner.id = "riskScoreBanner";
+    banner.style.cssText = "border-radius:14px; padding:20px 24px; margin-bottom:20px; display:flex; align-items:center; gap:20px; flex-wrap:wrap;";
+    if (advisoryGrid && advisorySection.contains(advisoryGrid)) {
+      advisorySection.insertBefore(banner, advisoryGrid);
+    } else {
+      advisorySection.appendChild(banner);
+    }
+  }
+
+  banner.style.background = level.bg;
+  banner.innerHTML = `
+    <div style="font-size:2.4rem; font-weight:800; color:${level.color}; min-width:90px;">${score}<span style="font-size:1rem; font-weight:600;">/100</span></div>
+    <div>
+      <div style="font-weight:700; color:${level.color}; font-size:1.05rem;">Your Personal Risk Today: ${level.label}</div>
+      <div style="font-size:0.9rem; color:#555; margin-top:2px;">Based on current weather in ${city} combined with your health profile — not a medical diagnosis, just a quick reference.</div>
+    </div>
+  `;
 }
 
 // =============================================
@@ -540,6 +626,8 @@ async function generateAdvisory(data) {
     });
   }
 
+lastWeatherData = data;
+renderRiskScore(computeRiskScore(data, null), data.city);
 renderAdvisories(advisories, data.city);
 }
 // =============================================
@@ -852,6 +940,9 @@ async function loadAirQuality(lat, lon, city) {
     // Personalized AQI advisory: append an extra advisory card if the user has
     // a condition that AQI particularly affects, and air quality is poor enough to matter.
     addPersonalizedAqiAdvisory(data.aqi);
+    if (lastWeatherData) {
+      renderRiskScore(computeRiskScore(lastWeatherData, data.aqi), city);
+    }
 
   } catch (error) {
     console.log("Could not load air quality:", error);
