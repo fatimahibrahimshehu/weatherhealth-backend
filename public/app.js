@@ -558,6 +558,123 @@ async function generateAdvisory(data) {
     });
   }
 
+  if (has("epilepsy") && (temp >= 35 || humidity >= 85)) {
+    advisories.push({
+      icon: "🧠",
+      iconBg: "#fdedec",
+      title: "Epilepsy Advisory — For You",
+      message: "Extreme heat and dehydration can lower seizure threshold for some people with epilepsy. Based on your health profile, stay well hydrated, avoid overheating, and keep to your usual medication schedule.",
+      level: "danger",
+      badge: "🔴 Personalized Warning",
+      badgeBg: "#fdedec",
+      badgeColor: "#c0392b"
+    });
+  }
+
+  if (has("copd") && (humidity >= 70 || wind >= 14 || desc.includes("fog") || desc.includes("mist") || desc.includes("haze") || temp < 10)) {
+    advisories.push({
+      icon: "🫁",
+      iconBg: "#fdedec",
+      title: "COPD Advisory — For You",
+      message: "Cold air, humidity, and poor air quality commonly trigger COPD flare-ups. Based on your health profile, keep your rescue inhaler close, avoid cold or dusty outdoor air, and consider a mask if you must go outside.",
+      level: "danger",
+      badge: "🔴 Personalized Warning",
+      badgeBg: "#fdedec",
+      badgeColor: "#c0392b"
+    });
+  }
+
+  if (has("anxiety/depression") && (desc.includes("storm") || desc.includes("thunder") || desc.includes("rain") || humidity >= 80)) {
+    advisories.push({
+      icon: "🧘",
+      iconBg: "#f0f6ff",
+      title: "Mood & Weather Advisory — For You",
+      message: "Stormy, overcast, or heavily humid days can affect mood and energy for some people. Based on your health profile, be gentle with yourself today — keep to routines, stay connected with others, and reach out for support if you need it.",
+      level: "warning",
+      badge: "🟡 Personalized Advice",
+      badgeBg: "#fef9e7",
+      badgeColor: "#d68910"
+    });
+  }
+
+  if (has("autoimmune disorders") && ((desc.includes("clear") && temp >= 20) || temp >= 33 || temp < 10)) {
+    advisories.push({
+      icon: "🦋",
+      iconBg: "#fdedec",
+      title: "Autoimmune Flare Advisory — For You",
+      message: "Strong sun and extreme temperatures are known triggers for autoimmune conditions such as lupus. Based on your health profile, use sunscreen and protective clothing outdoors, and avoid prolonged exposure to temperature extremes.",
+      level: "danger",
+      badge: "🔴 Personalized Warning",
+      badgeBg: "#fdedec",
+      badgeColor: "#c0392b"
+    });
+  }
+
+  if (has("thyroid disorders") && (temp >= 33 || temp < 15)) {
+    advisories.push({
+      icon: "🦢",
+      iconBg: "#fef9e7",
+      title: "Thyroid Advisory — For You",
+      message: "Thyroid conditions can affect how well your body regulates temperature. Based on your health profile, dress appropriately for extremes and pay attention to unusual heat or cold intolerance today.",
+      level: "warning",
+      badge: "🟡 Personalized Advice",
+      badgeBg: "#fef9e7",
+      badgeColor: "#d68910"
+    });
+  }
+
+  if (has("hiv/immunocompromised") && (temp >= 33 || humidity >= 80)) {
+    advisories.push({
+      icon: "🛡️",
+      iconBg: "#fdedec",
+      title: "Immune Health Advisory — For You",
+      message: "Extreme heat and humidity place extra strain on a weakened immune system. Based on your health profile, stay well hydrated, avoid prolonged outdoor exposure, and monitor for any signs of infection or unusual fatigue.",
+      level: "danger",
+      badge: "🔴 Personalized Warning",
+      badgeBg: "#fdedec",
+      badgeColor: "#c0392b"
+    });
+  }
+
+  if (has("cancer/chemotherapy") && (temp >= 33 || (desc.includes("clear") && temp >= 20))) {
+    advisories.push({
+      icon: "🎗️",
+      iconBg: "#fdedec",
+      title: "Treatment-Related Advisory — For You",
+      message: "Some cancer treatments increase sensitivity to heat and sunlight. Based on your health profile, stay hydrated, avoid peak sun hours, and use sun protection if going outside.",
+      level: "danger",
+      badge: "🔴 Personalized Warning",
+      badgeBg: "#fdedec",
+      badgeColor: "#c0392b"
+    });
+  }
+
+  if (has("multiple sclerosis") && temp >= 30) {
+    advisories.push({
+      icon: "🌡️",
+      iconBg: "#fdedec",
+      title: "MS Heat Sensitivity Advisory — For You",
+      message: "Many people with multiple sclerosis experience a temporary worsening of symptoms in warm conditions (Uhthoff's phenomenon). Based on your health profile, stay cool, avoid strenuous activity in the heat, and rest if symptoms increase.",
+      level: "danger",
+      badge: "🔴 Personalized Warning",
+      badgeBg: "#fdedec",
+      badgeColor: "#c0392b"
+    });
+  }
+
+  if (has("pneumonia") && (temp < 15 || humidity >= 80 || wind >= 14 || desc.includes("fog") || desc.includes("mist") || desc.includes("haze"))) {
+    advisories.push({
+      icon: "🫁",
+      iconBg: "#fdedec",
+      title: "Pneumonia Recovery Advisory — For You",
+      message: "Cold, damp, or humid air can irritate the lungs and slow recovery from pneumonia. Based on your health profile, stay warm, avoid cold outdoor air where possible, and keep well hydrated to help your recovery.",
+      level: "danger",
+      badge: "🔴 Personalized Warning",
+      badgeBg: "#fdedec",
+      badgeColor: "#c0392b"
+    });
+  }
+
   // --- PERSONALIZED Advisories based on age ---
   if (isElderly && temp >= 30) {
     advisories.push({
@@ -953,7 +1070,7 @@ function addPersonalizedAqiAdvisory(aqi) {
   if (aqi < 3) return; // only warn from "Moderate" (3) upward
   if (!advisoryGrid || advisorySection.style.display === "none") return;
 
-  const sensitiveConditions = ["asthma", "heart disease", "kidney disease", "sickle cell disease"];
+  const sensitiveConditions = ["asthma", "heart disease", "kidney disease", "sickle cell disease", "copd", "hiv/immunocompromised", "cancer/chemotherapy", "pneumonia"];
   const affected = (userConditions || []).filter(c => sensitiveConditions.includes(c));
   const isHighlyActive = userActivityLevel !== null && /high|active|intense/i.test(userActivityLevel || "");
 
