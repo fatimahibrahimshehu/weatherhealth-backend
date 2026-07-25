@@ -1566,22 +1566,21 @@ function getShareText() {
   const temp = document.getElementById("cardTemp").textContent;
   const desc = document.getElementById("cardDesc").textContent;
   const humidity = document.getElementById("cardHumidity").textContent;
-  return `🌤️ Weather in ${city}: ${temp}, ${desc}. Humidity: ${humidity}. Stay healthy! Check WeatherHealth for your daily health advisory. #WeatherHealth #HealthTips`;
+  return `Weather in ${city}: ${temp}, ${desc}. Humidity: ${humidity}. Stay healthy! Check WeatherHealth for your daily health advisory. #WeatherHealth #HealthTips`;
 }
 
 function shareOnWhatsApp() {
   const text = encodeURIComponent(getShareText());
-  window.open(`https://wa.me/?text=${text}`, "_blank");
+  window.open(`https://api.whatsapp.com/send?text=${text}`, "_blank");
 }
 
 function shareOnTwitter() {
   const text = encodeURIComponent(getShareText());
   window.open(`https://twitter.com/intent/tweet?text=${text}`, "_blank");
 }
-
 function shareOnFacebook() {
   const text = encodeURIComponent(getShareText());
-  window.open(`https://www.facebook.com/sharer/sharer.php?quote=${text}&u=https://weatherhealth.app`, "_blank");
+  window.open(`https://www.facebook.com/sharer/sharer.php?quote=${text}`, "_blank");
 }
 // =============================================
 //  SYMPTOM CHECKER
