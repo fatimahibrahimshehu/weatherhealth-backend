@@ -3,7 +3,7 @@
 //  Replace YOUR_API_KEY with your OpenWeatherMap key
 // =============================================
 
-const BASE_URL = "https://weatherhealth-backend.vercel.app/api/weather";
+const BASE_URL = "https://weatherhealth-backend.onrender.com/api/weather";
 // =============================================
 //  USER AUTH CHECK
 // =============================================
@@ -28,10 +28,6 @@ function logout() {
 checkLoginStatus();
 let currentUser = JSON.parse(localStorage.getItem("user"));
 let currentCity = "";
-let userConditions = [];
-let userAge = null;
-let userActivityLevel = null;
-let lastWeatherData = null;
 // ---- DOM References ----
 const cityInput   = document.getElementById("cityInput");
 const searchHint  = document.getElementById("searchHint");
@@ -78,7 +74,7 @@ currentCity = data.city;
 const lat = data.lat;
 const lon = data.lon;
 displayWeather(data);
-await generateAdvisory(data);
+generateAdvisory(data);
 checkWeatherAlerts(data);
 loadSearchHistory();
 loadForecast(city);
@@ -121,133 +117,15 @@ weatherCard.style.display = "block";
 }
 
 // =============================================
-//  USER HEALTH PROFILE (for personalized advisories)
-//  Fetches conditions, age, and activity level — all captured on the
-//  profile form but previously unused by the advisory engine.
-// =============================================
-async function getUserHealthProfile() {
-  if (!currentUser) return { conditions: [], age: null, activityLevel: null };
-  try {
-    const res = await fetch(`https://weatherhealth-backend.vercel.app/api/healthprofile/${currentUser.id}`);
-    if (!res.ok) return { conditions: [], age: null, activityLevel: null };
-    const profile = await res.json();
-    return {
-      conditions: profile.conditions || [],
-      age: profile.age || null,
-      activityLevel: profile.activityLevel || null,
-    };
-  } catch (error) {
-    console.log("Could not load health profile for personalization:", error);
-    return { conditions: [], age: null, activityLevel: null };
-  }
-}
-
-// =============================================
-//  HEALTH RISK SCORE
-//  Combines weather severity, air quality, and the user's personal risk
-//  factors (conditions, age, activity level) into a single 0-100 score.
-//  This is a weighted rule-based score, not machine learning — but it
-//  gives a single, easy-to-read "how risky is today, for you" figure.
-// =============================================
-function computeRiskScore(data, aqi) {
-  const temp = data.temperature;
-  const humidity = data.humidity;
-  const wind = data.wind_speed;
-  const desc = (data.condition || "").toLowerCase();
-
-  let score = 0;
-
-  // --- Weather severity ---
-  if (temp >= 38) score += 35;
-  else if (temp >= 33) score += 25;
-  else if (temp >= 25) score += 5;
-  else if (temp < 10) score += 20;
-
-  if (humidity >= 80) score += 15;
-  else if (humidity < 30) score += 10;
-
-  if (wind >= 14) score += 10;
-
-  if (desc.includes("thunder") || desc.includes("storm")) score += 20;
-  else if (desc.includes("snow")) score += 10;
-  else if (desc.includes("fog") || desc.includes("mist") || desc.includes("haze")) score += 8;
-
-  // --- Air quality (added once AQI has loaded) ---
-  if (aqi !== null && aqi !== undefined) {
-    if (aqi >= 5) score += 25;
-    else if (aqi >= 4) score += 18;
-    else if (aqi >= 3) score += 10;
-    else if (aqi >= 2) score += 3;
-  }
-
-  // --- Personal risk factors ---
-  const conditionCount = (userConditions || []).length;
-  score += Math.min(conditionCount * 6, 24);
-
-  if ((userAge !== null && userAge >= 60) || (userAge !== null && userAge <= 12)) {
-    score += 10;
-  }
-
-  if (userActivityLevel !== null && /high|active|intense/i.test(userActivityLevel)) {
-    score += 5;
-  }
-
-  return Math.max(0, Math.min(100, Math.round(score)));
-}
-
-function getRiskLevel(score) {
-  if (score >= 71) return { label: "Severe", color: "#c0392b", bg: "#fdedec" };
-  if (score >= 46) return { label: "High", color: "#d68910", bg: "#fef9e7" };
-  if (score >= 21) return { label: "Moderate", color: "#2980b9", bg: "#eaf4fb" };
-  return { label: "Low", color: "#1e8449", bg: "#eafaf1" };
-}
-
-function renderRiskScore(score, city) {
-  const level = getRiskLevel(score);
-  let banner = document.getElementById("riskScoreBanner");
-
-  if (!banner) {
-    banner = document.createElement("div");
-    banner.id = "riskScoreBanner";
-    banner.style.cssText = "border-radius:14px; padding:20px 24px; margin-bottom:20px; display:flex; align-items:center; gap:20px; flex-wrap:wrap;";
-    if (advisoryGrid && advisorySection.contains(advisoryGrid)) {
-      advisorySection.insertBefore(banner, advisoryGrid);
-    } else {
-      advisorySection.appendChild(banner);
-    }
-  }
-
-  banner.style.background = level.bg;
-  banner.innerHTML = `
-    <div style="font-size:2.4rem; font-weight:800; color:${level.color}; min-width:90px;">${score}<span style="font-size:1rem; font-weight:600;">/100</span></div>
-    <div>
-      <div style="font-weight:700; color:${level.color}; font-size:1.05rem;">Your Personal Risk Today: ${level.label}</div>
-      <div style="font-size:0.9rem; color:#555; margin-top:2px;">Based on current weather in ${city} combined with your health profile — not a medical diagnosis, just a quick reference.</div>
-    </div>
-  `;
-}
-
-// =============================================
 //  ADVISORY ENGINE
 //  Maps weather conditions → health advisories
-//  Also personalizes advisories based on the user's saved health profile
 // =============================================
-async function generateAdvisory(data) {
+function generateAdvisory(data) {
   const temp     = data.temperature;
   const humidity = data.humidity;
   const wind     = data.wind_speed;
   const desc     = data.condition.toLowerCase();
   const advisories = [];
-
-  // Refresh the user's saved health profile each time so profile edits take effect immediately
-  const profile = await getUserHealthProfile();
-  userConditions = profile.conditions;
-  userAge = profile.age;
-  userActivityLevel = profile.activityLevel;
-  const has = (condition) => userConditions.includes(condition);
-  const isElderly = userAge !== null && userAge >= 60;
-  const isChild = userAge !== null && userAge <= 12;
-  const isHighlyActive = userActivityLevel !== null && /high|active|intense/i.test(userActivityLevel);
 
   // --- Temperature Advisories ---
   if (temp >= 38) {
@@ -335,7 +213,7 @@ async function generateAdvisory(data) {
     });
   }
 
-  // --- Condition-based Advisories (weather condition text) ---
+  // --- Condition-based Advisories ---
   if (desc.includes("rain") || desc.includes("drizzle")) {
     advisories.push({
       icon: "🌧️",
@@ -401,218 +279,7 @@ async function generateAdvisory(data) {
     });
   }
 
-  // --- PERSONALIZED Advisories (based on the user's saved health conditions) ---
-  if (has("asthma") && (humidity >= 70 || desc.includes("fog") || desc.includes("mist") || desc.includes("haze") || wind >= 14)) {
-    advisories.push({
-      icon: "🫁",
-      iconBg: "#fdedec",
-      title: "Asthma Alert — For You",
-      message: "Based on your health profile, today's conditions may trigger breathing difficulty. Keep your inhaler with you, avoid strenuous outdoor exercise, and stay indoors with windows closed if symptoms start.",
-      level: "danger",
-      badge: "🔴 Personalized Warning",
-      badgeBg: "#fdedec",
-      badgeColor: "#c0392b"
-    });
-  }
-
-  if (has("heart disease") && temp >= 33) {
-    advisories.push({
-      icon: "❤️",
-      iconBg: "#fdedec",
-      title: "Heart Health Alert — For You",
-      message: "High temperatures put extra strain on the cardiovascular system. Based on your health profile, avoid outdoor exertion, rest often in shaded or cool areas, and monitor for chest discomfort or unusual fatigue.",
-      level: "danger",
-      badge: "🔴 Personalized Warning",
-      badgeBg: "#fdedec",
-      badgeColor: "#c0392b"
-    });
-  }
-
-  if (has("hypertension") && temp >= 33) {
-    advisories.push({
-      icon: "🩺",
-      iconBg: "#fef9e7",
-      title: "Blood Pressure Alert — For You",
-      message: "Heat can affect blood pressure regulation. Based on your health profile, stay well hydrated, avoid sudden temperature changes, and monitor your blood pressure if you feel unwell.",
-      level: "warning",
-      badge: "🟡 Personalized Advice",
-      badgeBg: "#fef9e7",
-      badgeColor: "#d68910"
-    });
-  }
-
-  if (has("diabetes") && (temp >= 33 || humidity >= 80)) {
-    advisories.push({
-      icon: "🍬",
-      iconBg: "#fef9e7",
-      title: "Diabetes Advisory — For You",
-      message: "Heat and humidity can affect blood sugar levels and insulin absorption. Based on your health profile, stay hydrated, check your blood sugar more frequently, and keep medication out of direct heat.",
-      level: "warning",
-      badge: "🟡 Personalized Advice",
-      badgeBg: "#fef9e7",
-      badgeColor: "#d68910"
-    });
-  }
-
-  if (has("arthritis") && (temp < 15 || humidity >= 80)) {
-    advisories.push({
-      icon: "🦴",
-      iconBg: "#eaf4fb",
-      title: "Joint Pain Advisory — For You",
-      message: "Cold or damp weather commonly worsens joint pain. Based on your health profile, keep joints warm, do gentle stretches indoors, and avoid prolonged cold exposure.",
-      level: "warning",
-      badge: "🟡 Personalized Advice",
-      badgeBg: "#fef9e7",
-      badgeColor: "#d68910"
-    });
-  }
-
-  if (has("allergies") && (wind >= 14 || humidity >= 70 || desc.includes("haze") || desc.includes("dust"))) {
-    advisories.push({
-      icon: "🤧",
-      iconBg: "#f0f6ff",
-      title: "Allergy Alert — For You",
-      message: "Windy, humid, or dusty conditions can carry more allergens today. Based on your health profile, keep windows closed, consider a mask outdoors, and have antihistamines on hand if needed.",
-      level: "warning",
-      badge: "🟡 Personalized Advice",
-      badgeBg: "#fef9e7",
-      badgeColor: "#d68910"
-    });
-  }
-
-  if (has("pregnancy") && (temp >= 33 || humidity >= 80)) {
-    advisories.push({
-      icon: "🤰",
-      iconBg: "#fdedec",
-      title: "Pregnancy Heat Advisory — For You",
-      message: "Pregnant individuals are more prone to overheating and dehydration. Based on your health profile, stay well hydrated, avoid prolonged sun exposure, rest often, and seek medical advice if you feel dizzy or unwell.",
-      level: "danger",
-      badge: "🔴 Personalized Warning",
-      badgeBg: "#fdedec",
-      badgeColor: "#c0392b"
-    });
-  }
-
-  if (has("obesity") && temp >= 33) {
-    advisories.push({
-      icon: "⚖️",
-      iconBg: "#fef9e7",
-      title: "Heat Advisory — For You",
-      message: "Higher body mass can make it harder to regulate body temperature in heat. Based on your health profile, avoid strenuous outdoor activity during peak heat, stay hydrated, and rest in cool or shaded areas.",
-      level: "warning",
-      badge: "🟡 Personalized Advice",
-      badgeBg: "#fef9e7",
-      badgeColor: "#d68910"
-    });
-  }
-
-  if (has("kidney disease") && (temp >= 33 || humidity >= 80)) {
-    advisories.push({
-      icon: "🩺",
-      iconBg: "#fdedec",
-      title: "Kidney Health Advisory — For You",
-      message: "Heat and dehydration place extra strain on kidney function. Based on your health profile, keep well hydrated within your recommended fluid intake, avoid excessive sun exposure, and monitor for unusual fatigue or swelling.",
-      level: "danger",
-      badge: "🔴 Personalized Warning",
-      badgeBg: "#fdedec",
-      badgeColor: "#c0392b"
-    });
-  }
-
-  if (has("migraine") && (humidity >= 80 || wind >= 14 || desc.includes("storm") || desc.includes("thunder"))) {
-    advisories.push({
-      icon: "🤕",
-      iconBg: "#f0f6ff",
-      title: "Migraine Trigger Alert — For You",
-      message: "Sudden pressure or humidity changes, storms, and strong winds are common migraine triggers. Based on your health profile, keep any prescribed medication nearby, stay hydrated, and rest in a calm, dim environment if a migraine starts.",
-      level: "warning",
-      badge: "🟡 Personalized Advice",
-      badgeBg: "#fef9e7",
-      badgeColor: "#d68910"
-    });
-  }
-
-  if (has("sickle cell disease") && (temp >= 33 || temp < 15 || humidity < 30)) {
-    advisories.push({
-      icon: "🩸",
-      iconBg: "#fdedec",
-      title: "Sickle Cell Advisory — For You",
-      message: "Extreme heat, cold, and dehydration can increase the risk of a sickle cell crisis. Based on your health profile, stay well hydrated, dress appropriately for the temperature, and avoid sudden extreme temperature changes.",
-      level: "danger",
-      badge: "🔴 Personalized Warning",
-      badgeBg: "#fdedec",
-      badgeColor: "#c0392b"
-    });
-  }
-
-  if (has("skin conditions") && (humidity < 30 || (desc.includes("clear") && temp >= 20))) {
-    advisories.push({
-      icon: "🧴",
-      iconBg: "#f0f6ff",
-      title: "Skin Health Advisory — For You",
-      message: "Dry air and strong sun can both aggravate skin conditions like eczema or psoriasis. Based on your health profile, moisturise regularly, use sunscreen if going outside, and avoid long hot showers that strip skin moisture.",
-      level: "warning",
-      badge: "🟡 Personalized Advice",
-      badgeBg: "#fef9e7",
-      badgeColor: "#d68910"
-    });
-  }
-
-  // --- PERSONALIZED Advisories based on age ---
-  if (isElderly && temp >= 30) {
-    advisories.push({
-      icon: "👴",
-      iconBg: "#fdedec",
-      title: "Heat Advisory for Older Adults — For You",
-      message: `Based on your profile (age ${userAge}), older adults are more vulnerable to heat-related illness even at moderately high temperatures. Avoid the midday sun, drink water regularly even without feeling thirsty, and check in with someone if you'll be alone outdoors.`,
-      level: "danger",
-      badge: "🔴 Personalized Warning",
-      badgeBg: "#fdedec",
-      badgeColor: "#c0392b"
-    });
-  }
-
-  if (isElderly && temp <= 15) {
-    advisories.push({
-      icon: "🧣",
-      iconBg: "#eaf4fb",
-      title: "Cold Advisory for Older Adults — For You",
-      message: `Based on your profile (age ${userAge}), older adults lose body heat faster and are at higher risk of cold-related complications. Dress warmly indoors and out, and keep your living space adequately heated.`,
-      level: "warning",
-      badge: "🟡 Personalized Advice",
-      badgeBg: "#fef9e7",
-      badgeColor: "#d68910"
-    });
-  }
-
-  if (isChild && (temp >= 33 || temp <= 10)) {
-    advisories.push({
-      icon: "🧒",
-      iconBg: "#eaf4fb",
-      title: "Weather Advisory for Children — For You",
-      message: `Based on your profile (age ${userAge}), children regulate body temperature less efficiently than adults. Limit time outdoors during extreme conditions and dress appropriately for the weather.`,
-      level: "warning",
-      badge: "🟡 Personalized Advice",
-      badgeBg: "#fef9e7",
-      badgeColor: "#d68910"
-    });
-  }
-
-  // --- PERSONALIZED Advisory based on activity level ---
-  if (isHighlyActive && (temp >= 33 || humidity >= 80)) {
-    advisories.push({
-      icon: "🏃",
-      iconBg: "#fef9e7",
-      title: "High Activity Heat Advisory — For You",
-      message: "Based on your profile's activity level, intense exercise in hot or humid conditions significantly increases dehydration and heat exhaustion risk. Consider training earlier or later in the day, and increase your fluid intake beyond usual.",
-      level: "warning",
-      badge: "🟡 Personalized Advice",
-      badgeBg: "#fef9e7",
-      badgeColor: "#d68910"
-    });
-  }
-
-
+  // Fallback if nothing matched
   if (advisories.length === 0) {
     advisories.push({
       icon: "✅",
@@ -626,8 +293,6 @@ async function generateAdvisory(data) {
     });
   }
 
-lastWeatherData = data;
-renderRiskScore(computeRiskScore(data, null), data.city);
 renderAdvisories(advisories, data.city);
 }
 // =============================================
@@ -687,7 +352,7 @@ function toggleMenu() {
 // =============================================
 async function loadSearchHistory() {
   try {
-    const res = await fetch("https://weatherhealth-backend.vercel.app/api/history");
+    const res = await fetch("https://weatherhealth-backend.onrender.com/api/history");
     const history = await res.json();
 
     const historySection = document.getElementById("historySection");
@@ -744,7 +409,7 @@ loadSearchHistory();
 // =============================================
 async function loadForecast(city) {
   try {
-    const res = await fetch(`https://weatherhealth-backend.vercel.app/api/forecast?city=${encodeURIComponent(city)}`);
+    const res = await fetch(`https://weatherhealth-backend.onrender.com/api/forecast?city=${encodeURIComponent(city)}`);
     const data = await res.json();
 
     if (!res.ok) {
@@ -786,7 +451,7 @@ async function addToFavorites() {
   if (!currentUser || !currentCity) return;
 
   try {
-    const res = await fetch("https://weatherhealth-backend.vercel.app/api/favorites", {
+    const res = await fetch("https://weatherhealth-backend.onrender.com/api/favorites", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId: currentUser.id, city: currentCity }),
@@ -811,7 +476,7 @@ async function checkIfFavorited(city) {
   if (!currentUser) return;
 
   try {
-    const res = await fetch(`https://weatherhealth-backend.vercel.app/api/favorites/${currentUser.id}`);
+    const res = await fetch(`https://weatherhealth-backend.onrender.com/api/favorites/${currentUser.id}`);
     const favorites = await res.json();
 
     const btn = document.getElementById("favoriteBtn");
@@ -833,7 +498,7 @@ async function loadFavorites() {
   if (!currentUser) return;
 
   try {
-    const res = await fetch(`https://weatherhealth-backend.vercel.app/api/favorites/${currentUser.id}`);
+    const res = await fetch(`https://weatherhealth-backend.onrender.com/api/favorites/${currentUser.id}`);
     const favorites = await res.json();
 
     const favoritesSection = document.getElementById("favoritesSection");
@@ -871,7 +536,7 @@ function searchFavorite(city) {
 async function removeFavorite(id, event) {
   event.stopPropagation();
   try {
-    await fetch(`https://weatherhealth-backend.vercel.app/api/favorites/${id}`, { method: "DELETE" });
+    await fetch(`https://weatherhealth-backend.onrender.com/api/favorites/${id}`, { method: "DELETE" });
     loadFavorites();
   } catch (error) {
     console.log("Could not remove favorite:", error);
@@ -911,7 +576,7 @@ if (localStorage.getItem("darkMode") === "enabled") {
 // =============================================
 async function loadAirQuality(lat, lon, city) {
   try {
-    const res = await fetch(`https://weatherhealth-backend.vercel.app/api/airquality?lat=${lat}&lon=${lon}`);
+    const res = await fetch(`https://weatherhealth-backend.onrender.com/api/airquality?lat=${lat}&lon=${lon}`);
     const data = await res.json();
 
     if (!res.ok) {
@@ -937,50 +602,9 @@ async function loadAirQuality(lat, lon, city) {
 
     document.getElementById("aqiSection").style.display = "block";
 
-    // Personalized AQI advisory: append an extra advisory card if the user has
-    // a condition that AQI particularly affects, and air quality is poor enough to matter.
-    addPersonalizedAqiAdvisory(data.aqi);
-    if (lastWeatherData) {
-      renderRiskScore(computeRiskScore(lastWeatherData, data.aqi), city);
-    }
-
   } catch (error) {
     console.log("Could not load air quality:", error);
   }
-}
-
-function addPersonalizedAqiAdvisory(aqi) {
-  if (aqi < 3) return; // only warn from "Moderate" (3) upward
-  if (!advisoryGrid || advisorySection.style.display === "none") return;
-
-  const sensitiveConditions = ["asthma", "heart disease", "kidney disease", "sickle cell disease"];
-  const affected = (userConditions || []).filter(c => sensitiveConditions.includes(c));
-  const isHighlyActive = userActivityLevel !== null && /high|active|intense/i.test(userActivityLevel || "");
-
-  if (affected.length === 0 && !isHighlyActive) return;
-
-  // Avoid adding a duplicate card if one already exists for this search
-  if (document.getElementById("personalizedAqiCard")) return;
-
-  let reason;
-  if (affected.length > 0 && isHighlyActive) {
-    reason = `your health profile (${affected.join(", ")}) and your high activity level`;
-  } else if (affected.length > 0) {
-    reason = `your health profile (${affected.join(", ")})`;
-  } else {
-    reason = "your high activity level, which means more air is breathed in during exercise";
-  }
-
-  const card = document.createElement("div");
-  card.id = "personalizedAqiCard";
-  card.className = "advisory-card danger";
-  card.innerHTML = `
-    <div class="advisory-card-icon" style="background:#fdedec; font-size:1.5rem;">🌫️</div>
-    <h3>Air Quality Alert — For You</h3>
-    <p>Based on ${reason}, today's air quality (AQI ${aqi}) may affect you more than most people. Limit time outdoors, keep windows closed, and keep any prescribed medication close by.</p>
-    <span class="advisory-badge" style="background:#fdedec; color:#c0392b;">🔴 Personalized Warning</span>
-  `;
-  advisoryGrid.appendChild(card);
 }
 // =============================================
 //  GPS AUTO-LOCATION
@@ -1000,10 +624,12 @@ function getLocationWeather() {
       const { latitude, longitude } = position.coords;
 
       try {
-        const res = await fetch(`https://weatherhealth-backend.vercel.app/api/weather?lat=${latitude}&lon=${longitude}`);
+        const res = await fetch(
+          `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=ed4a011be27dada8b0db974aea922485&units=metric`
+        );
         const data = await res.json();
 
-        cityInput.value = data.city;
+        cityInput.value = data.name;
         getWeather();
 
       } catch (error) {
@@ -1025,7 +651,7 @@ function getLocationWeather() {
 // =============================================
 async function loadUVIndex(lat, lon, city) {
   try {
-    const res = await fetch(`https://weatherhealth-backend.vercel.app/api/uvindex?lat=${lat}&lon=${lon}`);
+    const res = await fetch(`https://weatherhealth-backend.onrender.com/api/uvindex?lat=${lat}&lon=${lon}`);
     const data = await res.json();
 
     if (!res.ok) {
@@ -1051,7 +677,7 @@ async function loadUVIndex(lat, lon, city) {
 // =============================================
 async function loadHourlyForecast(city) {
   try {
-    const res = await fetch(`https://weatherhealth-backend.vercel.app/api/hourly?city=${encodeURIComponent(city)}`);
+    const res = await fetch(`https://weatherhealth-backend.onrender.com/api/hourly?city=${encodeURIComponent(city)}`);
     const data = await res.json();
 
     if (!res.ok) {
@@ -1095,7 +721,7 @@ async function saveHealthProfile() {
   const msg = document.getElementById("profileMsg");
 
   try {
-    const res = await fetch("https://weatherhealth-backend.vercel.app/api/healthprofile", {
+    const res = await fetch("https://weatherhealth-backend.onrender.com/api/healthprofile", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -1111,9 +737,6 @@ async function saveHealthProfile() {
     if (res.ok) {
       msg.textContent = "✅ Health profile saved successfully!";
       msg.style.color = "#27ae60";
-      userConditions = conditions; // keep in sync so the next advisory search uses the update immediately
-      userAge = parseInt(age) || null;
-      userActivityLevel = activityLevel || null;
     } else {
       msg.textContent = "❌ Failed to save profile. Try again.";
       msg.style.color = "#e05a5a";
@@ -1128,7 +751,7 @@ async function loadHealthProfile() {
   if (!currentUser) return;
 
   try {
-    const res = await fetch(`https://weatherhealth-backend.vercel.app/api/healthprofile/${currentUser.id}`);
+    const res = await fetch(`https://weatherhealth-backend.onrender.com/api/healthprofile/${currentUser.id}`);
 
     if (!res.ok) return;
 
@@ -1149,7 +772,6 @@ async function loadHealthProfile() {
           cb.checked = true;
         }
       });
-      userConditions = profile.conditions;
     }
 
   } catch (error) {
@@ -1229,7 +851,7 @@ async function sendWeatherEmail() {
       wind_speed: document.getElementById("cardWind").textContent.replace(" m/s", ""),
     };
 
-    const res = await fetch("https://weatherhealth-backend.vercel.app/api/sendemail", {
+    const res = await fetch("https://weatherhealth-backend.onrender.com/api/sendemail", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -1430,7 +1052,7 @@ function downloadPDFReport() {
   btn.disabled = true;
 
   const link = document.createElement("a");
-  link.href = `https://weatherhealth-backend.vercel.app/api/report?city=${encodeURIComponent(currentCity)}`;
+  link.href = `https://weatherhealth-backend.onrender.com/api/report?city=${encodeURIComponent(currentCity)}`;
   link.download = `WeatherHealth_${currentCity}_Report.pdf`;
   document.body.appendChild(link);
   link.click();
@@ -1614,7 +1236,89 @@ let tempChartInstance = null;
 
 async function loadTemperatureChart(city) {
   try {
-    const res = await fetch(`https://weatherhealth-backend.vercel.app/api/hourly?city=${encodeURIComponent(city)}`);
+    const res = await fetch(`https://weatherhealth-backend.onrender.com/api/hourly?city=${encodeURIComponent(city)}`);
+    const data = await res.json();
+
+    if (!res.ok || !data.hourly || data.hourly.length === 0) {
+      document.getElementById("chartSection").style.display = "none";
+      return;
+    }
+
+    document.getElementById("chartCity").textContent = data.city;
+    document.getElementById("chartSection").style.display = "block";
+
+    const labels = data.hourly.map(h => h.time);
+    const temps = data.hourly.map(h => h.temp);
+    const humidity = data.hourly.map(h => h.humidity);
+
+    // Destroy existing chart if it exists
+    if (tempChartInstance) {
+      tempChartInstance.destroy();
+      tempChartInstance = null;
+    }
+
+    // Small delay to ensure canvas is ready
+    setTimeout(() => {
+      const canvas = document.getElementById("tempChart");
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+
+      tempChartInstance = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels,
+          datasets: [
+            {
+              label: "Temperature (°C)",
+              data: temps,
+              borderColor: "#1a6fb3",
+              backgroundColor: "rgba(26, 111, 179, 0.1)",
+              borderWidth: 3,
+              pointBackgroundColor: "#1a6fb3",
+              pointRadius: 5,
+              tension: 0.4,
+              fill: true,
+            },
+            {
+              label: "Humidity (%)",
+              data: humidity,
+              borderColor: "#2ecc8f",
+              backgroundColor: "rgba(46, 204, 143, 0.1)",
+              borderWidth: 3,
+              pointBackgroundColor: "#2ecc8f",
+              pointRadius: 5,
+              tension: 0.4,
+              fill: true,
+            }
+          ],
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { position: "top" },
+            tooltip: { mode: "index", intersect: false },
+          },
+          scales: {
+            y: {
+              beginAtZero: false,
+              grid: { color: "rgba(0,0,0,0.05)" },
+            },
+            x: {
+              grid: { color: "rgba(0,0,0,0.05)" },
+            },
+          },
+        },
+      });
+    }, 300);
+
+  } catch (error) {
+    console.log("Could not load temperature chart:", error);
+  }
+}
+
+async function loadTemperatureChart(city) {
+  try {
+    const res = await fetch(`https://weatherhealth-backend.onrender.com/api/hourly?city=${encodeURIComponent(city)}`);
     const data = await res.json();
 
     if (!res.ok) {
