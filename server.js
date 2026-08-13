@@ -448,23 +448,16 @@ app.get("/api/report", async (req, res) => {
     res.status(500).json({ error: "Failed to generate PDF report" });
   }
 });
-// =============================================
-//  ROUTE: Test Environment Variables
-// =============================================
-app.get("/api/admin/test", (req, res) => {
-  res.json({
-    adminUsername: process.env.ADMIN_USERNAME ? "SET" : "NOT SET",
-    adminPassword: process.env.ADMIN_PASSWORD ? "SET" : "NOT SET",
-  });
-});
+
 // =============================================
 //  ROUTE: Admin Login
 // =============================================
-app.get("/api/admin/login", (req, res) => {
-  const { username, password } = req.query;
+app.post("/api/admin/login", (req, res) => {
+  const { username, password } = req.body;
 
-  console.log("Login attempt:", username, password);
-  console.log("Expected:", process.env.ADMIN_USERNAME, process.env.ADMIN_PASSWORD);
+  if (!username || !password) {
+    return res.status(400).json({ error: "Username and password are required" });
+  }
 
   if (
     username === process.env.ADMIN_USERNAME &&

@@ -9,7 +9,11 @@ document.getElementById("f").onsubmit=async function(e){
   m.textContent="Checking...";
   m.style.color="#888";
   try{
-    var res=await fetch(API_BASE+"/api/admin/login?username="+encodeURIComponent(u)+"&password="+encodeURIComponent(p));
+    var res=await fetch(API_BASE+"/api/admin/login",{
+  method:"POST",
+  headers:{"Content-Type":"application/json"},
+  body:JSON.stringify({username:u,password:p})
+});
     var data=await res.json();
     if(res.ok){
       localStorage.setItem("adminToken",data.token);
