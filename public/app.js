@@ -279,7 +279,337 @@ function generateAdvisory(data) {
     });
   }
 
-  // Fallback if nothing matched
+
+  // --- PERSONALIZED Advisories (based on the user's saved health conditions) ---
+  if (has("asthma") && (humidity >= 70 || desc.includes("fog") || desc.includes("mist") || desc.includes("haze") || wind >= 14)) {
+    advisories.push({
+      icon: "🫁",
+      iconBg: "#fdedec",
+      title: "Asthma Alert — For You",
+      message: "Based on your health profile, today's conditions may trigger breathing difficulty. Keep your inhaler with you, avoid strenuous outdoor exercise, and stay indoors with windows closed if symptoms start.",
+      level: "danger",
+      badge: "🔴 Personalized Warning",
+      badgeBg: "#fdedec",
+      badgeColor: "#c0392b"
+    });
+  }
+
+  if (has("heart disease") && temp >= 33) {
+    advisories.push({
+      icon: "❤️",
+      iconBg: "#fdedec",
+      title: "Heart Health Alert — For You",
+      message: "High temperatures put extra strain on the cardiovascular system. Based on your health profile, avoid outdoor exertion, rest often in shaded or cool areas, and monitor for chest discomfort or unusual fatigue.",
+      level: "danger",
+      badge: "🔴 Personalized Warning",
+      badgeBg: "#fdedec",
+      badgeColor: "#c0392b"
+    });
+  }
+
+  if (has("hypertension") && temp >= 33) {
+    advisories.push({
+      icon: "🩺",
+      iconBg: "#fef9e7",
+      title: "Blood Pressure Alert — For You",
+      message: "Heat can affect blood pressure regulation. Based on your health profile, stay well hydrated, avoid sudden temperature changes, and monitor your blood pressure if you feel unwell.",
+      level: "warning",
+      badge: "🟡 Personalized Advice",
+      badgeBg: "#fef9e7",
+      badgeColor: "#d68910"
+    });
+  }
+
+  if (has("diabetes") && (temp >= 33 || humidity >= 80)) {
+    advisories.push({
+      icon: "🍬",
+      iconBg: "#fef9e7",
+      title: "Diabetes Advisory — For You",
+      message: "Heat and humidity can affect blood sugar levels and insulin absorption. Based on your health profile, stay hydrated, check your blood sugar more frequently, and keep medication out of direct heat.",
+      level: "warning",
+      badge: "🟡 Personalized Advice",
+      badgeBg: "#fef9e7",
+      badgeColor: "#d68910"
+    });
+  }
+
+  if (has("arthritis") && (temp < 15 || humidity >= 80)) {
+    advisories.push({
+      icon: "🦴",
+      iconBg: "#eaf4fb",
+      title: "Joint Pain Advisory — For You",
+      message: "Cold or damp weather commonly worsens joint pain. Based on your health profile, keep joints warm, do gentle stretches indoors, and avoid prolonged cold exposure.",
+      level: "warning",
+      badge: "🟡 Personalized Advice",
+      badgeBg: "#fef9e7",
+      badgeColor: "#d68910"
+    });
+  }
+
+  if (has("allergies") && (wind >= 14 || humidity >= 70 || desc.includes("haze") || desc.includes("dust"))) {
+    advisories.push({
+      icon: "🤧",
+      iconBg: "#f0f6ff",
+      title: "Allergy Alert — For You",
+      message: "Windy, humid, or dusty conditions can carry more allergens today. Based on your health profile, keep windows closed, consider a mask outdoors, and have antihistamines on hand if needed.",
+      level: "warning",
+      badge: "🟡 Personalized Advice",
+      badgeBg: "#fef9e7",
+      badgeColor: "#d68910"
+    });
+  }
+
+  if (has("pregnancy") && (temp >= 33 || humidity >= 80)) {
+    advisories.push({
+      icon: "🤰",
+      iconBg: "#fdedec",
+      title: "Pregnancy Heat Advisory — For You",
+      message: "Pregnant individuals are more prone to overheating and dehydration. Based on your health profile, stay well hydrated, avoid prolonged sun exposure, rest often, and seek medical advice if you feel dizzy or unwell.",
+      level: "danger",
+      badge: "🔴 Personalized Warning",
+      badgeBg: "#fdedec",
+      badgeColor: "#c0392b"
+    });
+  }
+
+  if (has("obesity") && temp >= 33) {
+    advisories.push({
+      icon: "⚖️",
+      iconBg: "#fef9e7",
+      title: "Heat Advisory — For You",
+      message: "Higher body mass can make it harder to regulate body temperature in heat. Based on your health profile, avoid strenuous outdoor activity during peak heat, stay hydrated, and rest in cool or shaded areas.",
+      level: "warning",
+      badge: "🟡 Personalized Advice",
+      badgeBg: "#fef9e7",
+      badgeColor: "#d68910"
+    });
+  }
+
+  if (has("kidney disease") && (temp >= 33 || humidity >= 80)) {
+    advisories.push({
+      icon: "🩺",
+      iconBg: "#fdedec",
+      title: "Kidney Health Advisory — For You",
+      message: "Heat and dehydration place extra strain on kidney function. Based on your health profile, keep well hydrated within your recommended fluid intake, avoid excessive sun exposure, and monitor for unusual fatigue or swelling.",
+      level: "danger",
+      badge: "🔴 Personalized Warning",
+      badgeBg: "#fdedec",
+      badgeColor: "#c0392b"
+    });
+  }
+
+  if (has("migraine") && (humidity >= 80 || wind >= 14 || desc.includes("storm") || desc.includes("thunder"))) {
+    advisories.push({
+      icon: "🤕",
+      iconBg: "#f0f6ff",
+      title: "Migraine Trigger Alert — For You",
+      message: "Sudden pressure or humidity changes, storms, and strong winds are common migraine triggers. Based on your health profile, keep any prescribed medication nearby, stay hydrated, and rest in a calm, dim environment if a migraine starts.",
+      level: "warning",
+      badge: "🟡 Personalized Advice",
+      badgeBg: "#fef9e7",
+      badgeColor: "#d68910"
+    });
+  }
+
+  if (has("sickle cell disease") && (temp >= 33 || temp < 15 || humidity < 30)) {
+    advisories.push({
+      icon: "🩸",
+      iconBg: "#fdedec",
+      title: "Sickle Cell Advisory — For You",
+      message: "Extreme heat, cold, and dehydration can increase the risk of a sickle cell crisis. Based on your health profile, stay well hydrated, dress appropriately for the temperature, and avoid sudden extreme temperature changes.",
+      level: "danger",
+      badge: "🔴 Personalized Warning",
+      badgeBg: "#fdedec",
+      badgeColor: "#c0392b"
+    });
+  }
+
+  if (has("skin conditions") && (humidity < 30 || (desc.includes("clear") && temp >= 20))) {
+    advisories.push({
+      icon: "🧴",
+      iconBg: "#f0f6ff",
+      title: "Skin Health Advisory — For You",
+      message: "Dry air and strong sun can both aggravate skin conditions like eczema or psoriasis. Based on your health profile, moisturise regularly, use sunscreen if going outside, and avoid long hot showers that strip skin moisture.",
+      level: "warning",
+      badge: "🟡 Personalized Advice",
+      badgeBg: "#fef9e7",
+      badgeColor: "#d68910"
+    });
+  }
+
+  if (has("epilepsy") && (temp >= 35 || humidity >= 85)) {
+    advisories.push({
+      icon: "🧠",
+      iconBg: "#fdedec",
+      title: "Epilepsy Advisory — For You",
+      message: "Extreme heat and dehydration can lower seizure threshold for some people with epilepsy. Based on your health profile, stay well hydrated, avoid overheating, and keep to your usual medication schedule.",
+      level: "danger",
+      badge: "🔴 Personalized Warning",
+      badgeBg: "#fdedec",
+      badgeColor: "#c0392b"
+    });
+  }
+
+  if (has("copd") && (humidity >= 70 || wind >= 14 || desc.includes("fog") || desc.includes("mist") || desc.includes("haze") || temp < 10)) {
+    advisories.push({
+      icon: "🫁",
+      iconBg: "#fdedec",
+      title: "COPD Advisory — For You",
+      message: "Cold air, humidity, and poor air quality commonly trigger COPD flare-ups. Based on your health profile, keep your rescue inhaler close, avoid cold or dusty outdoor air, and consider a mask if you must go outside.",
+      level: "danger",
+      badge: "🔴 Personalized Warning",
+      badgeBg: "#fdedec",
+      badgeColor: "#c0392b"
+    });
+  }
+
+  if (has("anxiety/depression") && (desc.includes("storm") || desc.includes("thunder") || desc.includes("rain") || humidity >= 80)) {
+    advisories.push({
+      icon: "🧘",
+      iconBg: "#f0f6ff",
+      title: "Mood & Weather Advisory — For You",
+      message: "Stormy, overcast, or heavily humid days can affect mood and energy for some people. Based on your health profile, be gentle with yourself today — keep to routines, stay connected with others, and reach out for support if you need it.",
+      level: "warning",
+      badge: "🟡 Personalized Advice",
+      badgeBg: "#fef9e7",
+      badgeColor: "#d68910"
+    });
+  }
+
+  if (has("autoimmune disorders") && ((desc.includes("clear") && temp >= 20) || temp >= 33 || temp < 10)) {
+    advisories.push({
+      icon: "🦋",
+      iconBg: "#fdedec",
+      title: "Autoimmune Flare Advisory — For You",
+      message: "Strong sun and extreme temperatures are known triggers for autoimmune conditions such as lupus. Based on your health profile, use sunscreen and protective clothing outdoors, and avoid prolonged exposure to temperature extremes.",
+      level: "danger",
+      badge: "🔴 Personalized Warning",
+      badgeBg: "#fdedec",
+      badgeColor: "#c0392b"
+    });
+  }
+
+  if (has("thyroid disorders") && (temp >= 33 || temp < 15)) {
+    advisories.push({
+      icon: "🦢",
+      iconBg: "#fef9e7",
+      title: "Thyroid Advisory — For You",
+      message: "Thyroid conditions can affect how well your body regulates temperature. Based on your health profile, dress appropriately for extremes and pay attention to unusual heat or cold intolerance today.",
+      level: "warning",
+      badge: "🟡 Personalized Advice",
+      badgeBg: "#fef9e7",
+      badgeColor: "#d68910"
+    });
+  }
+
+  if (has("hiv/immunocompromised") && (temp >= 33 || humidity >= 80)) {
+    advisories.push({
+      icon: "🛡️",
+      iconBg: "#fdedec",
+      title: "Immune Health Advisory — For You",
+      message: "Extreme heat and humidity place extra strain on a weakened immune system. Based on your health profile, stay well hydrated, avoid prolonged outdoor exposure, and monitor for any signs of infection or unusual fatigue.",
+      level: "danger",
+      badge: "🔴 Personalized Warning",
+      badgeBg: "#fdedec",
+      badgeColor: "#c0392b"
+    });
+  }
+
+  if (has("cancer/chemotherapy") && (temp >= 33 || (desc.includes("clear") && temp >= 20))) {
+    advisories.push({
+      icon: "🎗️",
+      iconBg: "#fdedec",
+      title: "Treatment-Related Advisory — For You",
+      message: "Some cancer treatments increase sensitivity to heat and sunlight. Based on your health profile, stay hydrated, avoid peak sun hours, and use sun protection if going outside.",
+      level: "danger",
+      badge: "🔴 Personalized Warning",
+      badgeBg: "#fdedec",
+      badgeColor: "#c0392b"
+    });
+  }
+
+  if (has("multiple sclerosis") && temp >= 30) {
+    advisories.push({
+      icon: "🌡️",
+      iconBg: "#fdedec",
+      title: "MS Heat Sensitivity Advisory — For You",
+      message: "Many people with multiple sclerosis experience a temporary worsening of symptoms in warm conditions (Uhthoff's phenomenon). Based on your health profile, stay cool, avoid strenuous activity in the heat, and rest if symptoms increase.",
+      level: "danger",
+      badge: "🔴 Personalized Warning",
+      badgeBg: "#fdedec",
+      badgeColor: "#c0392b"
+    });
+  }
+
+  if (has("pneumonia") && (temp < 15 || humidity >= 80 || wind >= 14 || desc.includes("fog") || desc.includes("mist") || desc.includes("haze"))) {
+    advisories.push({
+      icon: "🫁",
+      iconBg: "#fdedec",
+      title: "Pneumonia Recovery Advisory — For You",
+      message: "Cold, damp, or humid air can irritate the lungs and slow recovery from pneumonia. Based on your health profile, stay warm, avoid cold outdoor air where possible, and keep well hydrated to help your recovery.",
+      level: "danger",
+      badge: "🔴 Personalized Warning",
+      badgeBg: "#fdedec",
+      badgeColor: "#c0392b"
+    });
+  }
+
+  // --- PERSONALIZED Advisories based on age ---
+  if (isElderly && temp >= 30) {
+    advisories.push({
+      icon: "👴",
+      iconBg: "#fdedec",
+      title: "Heat Advisory for Older Adults — For You",
+      message: `Based on your profile (age ${userAge}), older adults are more vulnerable to heat-related illness even at moderately high temperatures. Avoid the midday sun, drink water regularly even without feeling thirsty, and check in with someone if you'll be alone outdoors.`,
+      level: "danger",
+      badge: "🔴 Personalized Warning",
+      badgeBg: "#fdedec",
+      badgeColor: "#c0392b"
+    });
+  }
+
+  if (isElderly && temp <= 15) {
+    advisories.push({
+      icon: "🧣",
+      iconBg: "#eaf4fb",
+      title: "Cold Advisory for Older Adults — For You",
+      message: `Based on your profile (age ${userAge}), older adults lose body heat faster and are at higher risk of cold-related complications. Dress warmly indoors and out, and keep your living space adequately heated.`,
+      level: "warning",
+      badge: "🟡 Personalized Advice",
+      badgeBg: "#fef9e7",
+      badgeColor: "#d68910"
+    });
+  }
+
+  if (isChild && (temp >= 33 || temp <= 10)) {
+    advisories.push({
+      icon: "🧒",
+      iconBg: "#eaf4fb",
+      title: "Weather Advisory for Children — For You",
+      message: `Based on your profile (age ${userAge}), children regulate body temperature less efficiently than adults. Limit time outdoors during extreme conditions and dress appropriately for the weather.`,
+      level: "warning",
+      badge: "🟡 Personalized Advice",
+      badgeBg: "#fef9e7",
+      badgeColor: "#d68910"
+    });
+  }
+
+  // --- PERSONALIZED Advisory based on activity level ---
+  if (isHighlyActive && (temp >= 33 || humidity >= 80)) {
+    advisories.push({
+      icon: "🏃",
+      iconBg: "#fef9e7",
+      title: "High Activity Heat Advisory — For You",
+      message: "Based on your profile's activity level, intense exercise in hot or humid conditions significantly increases dehydration and heat exhaustion risk. Consider training earlier or later in the day, and increase your fluid intake beyond usual.",
+      level: "warning",
+      badge: "🟡 Personalized Advice",
+      badgeBg: "#fef9e7",
+      badgeColor: "#d68910"
+    });
+  }
+
+
+
   if (advisories.length === 0) {
     advisories.push({
       icon: "✅",
@@ -606,6 +936,42 @@ async function loadAirQuality(lat, lon, city) {
     console.log("Could not load air quality:", error);
   }
 }
+
+
+function addPersonalizedAqiAdvisory(aqi) {
+  if (aqi < 3) return; // only warn from "Moderate" (3) upward
+  if (!advisoryGrid || advisorySection.style.display === "none") return;
+
+  const sensitiveConditions = ["asthma", "heart disease", "kidney disease", "sickle cell disease", "copd", "hiv/immunocompromised", "cancer/chemotherapy", "pneumonia"];
+  const affected = (userConditions || []).filter(c => sensitiveConditions.includes(c));
+  const isHighlyActive = userActivityLevel !== null && /high|active|intense/i.test(userActivityLevel || "");
+
+  if (affected.length === 0 && !isHighlyActive) return;
+
+  // Avoid adding a duplicate card if one already exists for this search
+  if (document.getElementById("personalizedAqiCard")) return;
+
+  let reason;
+  if (affected.length > 0 && isHighlyActive) {
+    reason = `your health profile (${affected.join(", ")}) and your high activity level`;
+  } else if (affected.length > 0) {
+    reason = `your health profile (${affected.join(", ")})`;
+  } else {
+    reason = "your high activity level, which means more air is breathed in during exercise";
+  }
+
+  const card = document.createElement("div");
+  card.id = "personalizedAqiCard";
+  card.className = "advisory-card danger";
+  card.innerHTML = `
+    <div class="advisory-card-icon" style="background:#fdedec; font-size:1.5rem;">🌫️</div>
+    <h3>Air Quality Alert — For You</h3>
+    <p>Based on ${reason}, today's air quality (AQI ${aqi}) may affect you more than most people. Limit time outdoors, keep windows closed, and keep any prescribed medication close by.</p>
+    <span class="advisory-badge" style="background:#fdedec; color:#c0392b;">🔴 Personalized Warning</span>
+  `;
+  advisoryGrid.appendChild(card);
+}
+
 // =============================================
 //  GPS AUTO-LOCATION
 // =============================================
@@ -1071,22 +1437,21 @@ function getShareText() {
   const temp = document.getElementById("cardTemp").textContent;
   const desc = document.getElementById("cardDesc").textContent;
   const humidity = document.getElementById("cardHumidity").textContent;
-  return `🌤️ Weather in ${city}: ${temp}, ${desc}. Humidity: ${humidity}. Stay healthy! Check WeatherHealth for your daily health advisory. #WeatherHealth #HealthTips`;
+  return `Weather in ${city}: ${temp}, ${desc}. Humidity: ${humidity}. Stay healthy! Check WeatherHealth for your daily health advisory. #WeatherHealth #HealthTips`;
 }
 
 function shareOnWhatsApp() {
   const text = encodeURIComponent(getShareText());
-  window.open(`https://wa.me/?text=${text}`, "_blank");
+  window.open(`https://api.whatsapp.com/send?text=${text}`, "_blank");
 }
 
 function shareOnTwitter() {
   const text = encodeURIComponent(getShareText());
   window.open(`https://twitter.com/intent/tweet?text=${text}`, "_blank");
 }
-
 function shareOnFacebook() {
   const text = encodeURIComponent(getShareText());
-  window.open(`https://www.facebook.com/sharer/sharer.php?quote=${text}&u=https://weatherhealth.app`, "_blank");
+  window.open(`https://www.facebook.com/sharer/sharer.php?quote=${text}`, "_blank");
 }
 // =============================================
 //  SYMPTOM CHECKER
