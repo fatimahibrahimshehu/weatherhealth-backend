@@ -11,9 +11,17 @@ const Favorite = require("./models/Favorite");
 const HealthProfile = require("./models/HealthProfile");
 const authRoutes = require("./routes/auth");
 const path = require("path");
+const webpush = require("web-push");
+const PushSubscription = require("./models/PushSubscription");
 
 dotenv.config();
+console.log("VAPID key lengths:", (process.env.VAPID_PUBLIC_KEY || "").length, (process.env.VAPID_PRIVATE_KEY || "").length);
 
+webpush.setVapidDetails(
+  "mailto:" + process.env.EMAIL_USER,
+  process.env.VAPID_PUBLIC_KEY,
+  process.env.VAPID_PRIVATE_KEY
+);
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -113,7 +121,15 @@ const weatherData = {
       sunrise,
       sunset,
     };
-    const newSearch = new Search(weatherData);
+    // Link the search to the user if a valid token was sent (optional)
+    let searchUserId;
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      try {
+        searchUserId = jwt.verify(authHeader.split(" ")[1], process.env.JWT_SECRET).id;
+      } catch (e) { /* anonymous search */ }
+    }
+    const newSearch = new Search({ ...weatherData, userId: searchUserId });
     await newSearch.save();
     console.log(`📍 Search saved: ${weatherData.city}`);
     res.json(weatherData);
@@ -526,7 +542,103 @@ app.get("/api/admin/stats", async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch admin stats" });
   }
+});// =============================================
+//  PUSH NOTIFICATIONS
+// =============================================
+app.get("/api/push/key", (req, res) => {
+  res.json({ publicKey: process.env.VAPID_PUBLIC_KEY });
 });
+  
+app.post("/api/push/subscribe", async (req, res) => {
+  const { userId, subscription, city } = req.body;
+  if (!userId || !subscription || !subscription.endpoint) {
+    return res.status(400).json({ error: "User ID and subscription are required" });
+  }
+  try {
+    // keep only one subscription per user
+    await PushSubscription.deleteMany({ userId, endpoint: { $ne: subscription.endpoint } });
+    await PushSubscription.findOneAndUpdate(
+      { endpoint: subscription.endpoint },
+      { userId, endpoint: subscription.endpoint, keys: subscription.keys, city: city || "", lastAlert: "" },
+      { upsert: true, new: true }
+    );
+    res.status(201).json({ message: "Subscribed to alerts" });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to save subscription" });
+  }
+});
+// Same alert rules as the app, but run on the server
+function getPushAlert(w, conditions) {
+  const temp = w.temperature;
+  const humidity = w.humidity;
+  const wind = w.wind_speed;
+  const desc = w.condition.toLowerCase();
+  const has = (c) => conditions.includes(c);
+
+  if (desc.includes("thunder") || desc.includes("storm")) return "⛈️ Thunderstorm Warning! Stay indoors and avoid open areas.";
+  if (temp >= 40) return "🌡️ Extreme Heat Alert! Dangerous temperatures detected. Stay indoors and hydrate.";
+  if (temp <= 0) return "❄️ Freezing Temperature Alert! Risk of frostbite and icy conditions.";
+  if (desc.includes("heavy rain") || desc.includes("heavy intensity")) return "🌧️ Heavy Rain Warning! Risk of flooding. Avoid low-lying areas.";
+  if (has("asthma") && (humidity >= 70 || wind >= 14 || desc.includes("fog") || desc.includes("mist") || desc.includes("haze"))) return "🫁 Asthma Alert! Today's conditions may trigger breathing difficulty. Keep your inhaler with you.";
+  if (has("heart disease") && temp >= 33) return "❤️ Heart Health Alert! High temperature puts extra strain on your heart. Avoid outdoor exertion.";
+  if (wind >= 20) return "💨 Strong Wind Warning! Secure loose objects and avoid outdoor activities.";
+  if (temp >= 35) return "☀️ Heat Advisory! Very high temperatures. Drink water and limit sun exposure.";
+  if (has("diabetes") && (temp >= 33 || humidity >= 80)) return "🍬 Diabetes Alert! Heat or humidity can affect your blood sugar. Stay hydrated and check it more often.";
+  if (humidity >= 90) return "💧 High Humidity Alert! Feels much hotter than actual temperature. Stay cool.";
+  return null;
+}
+
+// This route is called on a schedule (for example by cron-job.org)
+app.get("/api/push/check", async (req, res) => {
+  if (req.query.secret !== process.env.CRON_SECRET) {
+    return res.status(403).json({ error: "Not allowed" });
+  }
+  try {
+    const subs = await PushSubscription.find({ city: { $ne: "" } });
+    let sent = 0;
+
+    for (const sub of subs) {
+      try {
+        const weatherRes = await axios.get("https://api.openweathermap.org/data/2.5/weather", {
+          params: { q: sub.city, appid: process.env.API_KEY, units: "metric" },
+        });
+        const d = weatherRes.data;
+        const w = {
+          temperature: Math.round(d.main.temp),
+          humidity: d.main.humidity,
+          wind_speed: d.wind.speed,
+          condition: d.weather[0].main + " " + d.weather[0].description,
+        };
+        const profile = await HealthProfile.findOne({ userId: sub.userId });
+        const message = getPushAlert(w, profile && profile.conditions ? profile.conditions : []);
+                console.log("Push check ->", sub.city, "| message:", message, "| last:", sub.lastAlert);
+
+        if (!message) {
+          if (sub.lastAlert) { sub.lastAlert = ""; await sub.save(); }
+          continue;
+        }
+          if (message === sub.lastAlert && req.query.force !== "1") continue;
+
+        await webpush.sendNotification(
+          { endpoint: sub.endpoint, keys: { p256dh: sub.keys.p256dh, auth: sub.keys.auth } },
+          JSON.stringify({ title: "WeatherHealth Alert", body: message })
+        );
+        sub.lastAlert = message;
+        await sub.save();
+        sent++;
+            } catch (err) {
+        console.log("Push error:", err.statusCode, err.body || err.message);
+        if ([401, 403, 404, 410].includes(err.statusCode)) {
+          await PushSubscription.deleteOne({ _id: sub._id }); // bad or old subscription
+        }
+      }
+    }
+    res.json({ checked: subs.length, sent });
+  } catch (error) {
+    res.status(500).json({ error: "Push check failed" });
+  }
+});
+
 // =============================================
 //  SERVE FRONTEND
 // =============================================
