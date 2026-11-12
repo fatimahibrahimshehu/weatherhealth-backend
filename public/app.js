@@ -1873,9 +1873,12 @@ async function loadTemperatureChart(city) {
 }// =============================================
 //  PUSH NOTIFICATIONS (Web Push)
 // =============================================
-const PUSH_API = (location.hostname === "localhost" || location.hostname === "127.0.0.1")
-  ? "http://localhost:5000"
-  : "https://weatherhealth-backend.vercel.app";
+const IS_NATIVE_APP = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+const PUSH_API = IS_NATIVE_APP
+  ? "https://weatherhealth-backend.vercel.app"
+  : ((location.hostname === "localhost" || location.hostname === "127.0.0.1")
+      ? "http://localhost:5000"
+      : location.origin);
 
 function urlBase64ToUint8Array(base64String) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -1930,4 +1933,42 @@ async function enablePushAlerts() {
   }
   const ok = await subscribeToPush();
   alert(ok ? "Alerts enabled for " + currentCity + "." : "Could not enable alerts. Open the Console to see the error.");
+}
+// =============================================
+//  DELETE MY ACCOUNT
+// =============================================
+async function deleteMyAccount() {
+  if (!currentUser) return;
+
+  if (!confirm("Delete your account? This removes your profile, favourites and alerts. This cannot be undone.")) return;
+
+  const password = prompt("Type your password to confirm:");
+  if (!password) return;
+
+  try {
+    const res = await fetch(`${PUSH_API}/api/account/delete`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: currentUser.id, password }),
+    });
+    const data = await res.json();
+
+    if (res.ok) {
+      if ("serviceWorker" in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        for (const r of regs) {
+          const s = await r.pushManager.getSubscription();
+          if (s) await s.unsubscribe();
+        }
+      }
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      alert("Your account has been deleted.");
+      window.location.href = "auth.html";
+    } else {
+      alert(data.error || "Could not delete your account.");
+    }
+  } catch (error) {
+    alert("Could not connect to the server.");
+  }
 }

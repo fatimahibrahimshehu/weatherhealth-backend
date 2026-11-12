@@ -638,7 +638,85 @@ app.get("/api/push/check", async (req, res) => {
     res.status(500).json({ error: "Push check failed" });
   }
 });
+// =============================================
+//  ADMIN: Manage Users (PROTECTED)
+// =============================================
+function verifyAdmin(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "No token provided" });
+  }
+  try {
+    const decoded = jwt.verify(authHeader.split(" ")[1], process.env.JWT_SECRET);
+    if (decoded.role !== "admin") {
+      return res.status(403).json({ error: "Admins only" });
+    }
+    next();
+  } catch (err) {
+    return res.status(403).json({ error: "Invalid or expired token" });
+  }
+}
 
+// List all users (without passwords)
+app.get("/api/admin/users", verifyAdmin, async (req, res) => {
+  try {
+    const User = require("./models/User");
+    const users = await User.find().select("-password -passwordHash").sort({ createdAt: -1 });
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch users" });
+  }
+});
+
+// Delete one user and everything that belongs to them
+app.delete("/api/admin/users/:id", verifyAdmin, async (req, res) => {
+  try {
+    const User = require("./models/User");
+    const userId = req.params.id;
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    await Favorite.deleteMany({ userId });
+    await HealthProfile.deleteMany({ userId });
+    await PushSubscription.deleteMany({ userId });
+    await User.findByIdAndDelete(userId);
+
+    res.json({ message: "User deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to delete user" });
+  }
+});
+// =============================================
+//  USER: Delete My Own Account
+// =============================================
+let bcryptLib;
+try { bcryptLib = require("bcryptjs"); } catch (e) { bcryptLib = require("bcrypt"); }
+
+app.post("/api/account/delete", async (req, res) => {
+  const { userId, password } = req.body;
+  if (!userId || !password) {
+    return res.status(400).json({ error: "User ID and password are required" });
+  }
+  try {
+    const User = require("./models/User");
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const savedHash = user.password || user.passwordHash;
+    const match = await bcryptLib.compare(password, savedHash);
+    if (!match) return res.status(401).json({ error: "Incorrect password" });
+
+    await Favorite.deleteMany({ userId });
+    await HealthProfile.deleteMany({ userId });
+    await PushSubscription.deleteMany({ userId });
+    await User.findByIdAndDelete(userId);
+
+    res.json({ message: "Account deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to delete account" });
+  }
+});
 // =============================================
 //  SERVE FRONTEND
 // =============================================
