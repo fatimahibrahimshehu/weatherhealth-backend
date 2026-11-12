@@ -6,6 +6,7 @@ const User = require("../models/User");
 const Favorite = require("../models/Favorite");
 const HealthProfile = require("../models/HealthProfile");
 const Search = require("../models/Search");
+const PushSubscription = require("../models/PushSubscription");
 const { requireAuth } = require("../middleware/auth");
 
 // =============================================
@@ -166,6 +167,7 @@ router.delete("/delete/:id", requireAuth, async (req, res) => {
       Favorite.deleteMany({ userId: user._id }),
       HealthProfile.deleteMany({ userId: user._id }),
       Search.deleteMany({ userId: user._id }),
+      PushSubscription.deleteMany({ userId: String(user._id) }), // stop push alerts to this user
     ]);
     await User.findByIdAndDelete(user._id);
 
