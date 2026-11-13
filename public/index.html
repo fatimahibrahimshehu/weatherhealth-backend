@@ -7,6 +7,12 @@
   <link rel="stylesheet" href="style.css" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Sora:wght@400;600;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#1a6fb3" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="WeatherHealth" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 </head>
 <body>
 
@@ -119,8 +125,9 @@
           <i class="fas fa-star"></i> Add to Favorites
         </button>
         <button class="email-btn" id="emailBtn" onclick="sendWeatherEmail()">
-          <i class="fas fa-envelope"></i> Email Report
-        </button>
+  <i class="fas fa-envelope"></i> Email Report
+</button>
+<button id="pushBtn" onclick="enablePushAlerts()">🔔 Enable Alerts</button>
         <button class="pdf-btn" id="pdfBtn" onclick="downloadPDFReport()">
           <i class="fas fa-file-pdf"></i> Download PDF
         </button>
@@ -291,6 +298,7 @@
         <button class="profile-save-btn" onclick="saveHealthProfile()">
           <i class="fas fa-save"></i> Save Profile
         </button>
+        <button onclick="deleteMyAccount()" style="margin-top:12px; background:#fdedec; color:#c0392b; border:none; border-radius:20px; padding:10px 20px; font-weight:600; cursor:pointer;"><i class="fas fa-trash"></i> Delete My Account</button>
         <p class="profile-msg" id="profileMsg"></p>
       </div>
     </div>

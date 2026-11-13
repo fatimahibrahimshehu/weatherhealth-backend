@@ -1,5 +1,7 @@
 <!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Admin Login</title><link rel="stylesheet" href="style.css"/><link rel="stylesheet" href="auth.css"/></head><body><div class="auth-wrapper"><div class="auth-card"><div class="auth-brand"><span>WeatherHealth Admin</span></div><form id="f" class="auth-form"><p id="m" class="auth-msg"></p><label>Username</label><input id="u" type="text" required/><label>Password</label><input id="p" type="password" required/><button type="submit" class="auth-btn">Sign In</button></form><p class="auth-footer-text"><a href="index.html">Back to App</a></p></div></div><script>
-var API_BASE = "https://weatherhealth-backend.vercel.app";
+    const API_BASE = (location.hostname === "localhost" || location.hostname === "127.0.0.1")
+      ? "http://localhost:5000"
+      : location.origin;
 if(localStorage.getItem("adminToken")){window.location.href="admin.html";}
 document.getElementById("f").onsubmit=async function(e){
   e.preventDefault();

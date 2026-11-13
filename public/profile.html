@@ -227,6 +227,24 @@
         <p class="profile-msg" id="passwordMsg"></p>
       </div>
 
+      <!-- Delete Account Card -->
+      <div class="profile-page-card" style="border:1px solid #e05a5a;">
+        <h2 style="color:#e05a5a;"><i class="fas fa-triangle-exclamation"></i> Delete Account</h2>
+        <p style="font-size:0.9rem; color:var(--muted); margin-bottom:14px;">
+          This permanently deletes your account, health profile, favourite cities and search history. This cannot be undone.
+        </p>
+        <div class="profile-field-group">
+          <div>
+            <label>Confirm with your password</label>
+            <input type="password" id="deletePassword" placeholder="Enter your password" />
+          </div>
+        </div>
+        <button class="profile-save-btn" onclick="deleteAccount()" style="background:#e05a5a;">
+          <i class="fas fa-trash"></i> Delete My Account
+        </button>
+        <p class="profile-msg" id="deleteMsg"></p>
+      </div>
+
     </div>
   </div>
 
@@ -258,7 +276,7 @@
       }
 
       try {
-        const res = await fetch(`http://localhost:5000/api/auth/update/${user.id}`, {
+        const res = await fetch(`https://weatherhealth-backend.vercel.app/api/auth/update/${user.id}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -315,7 +333,7 @@
       }
 
       try {
-        const res = await fetch(`http://localhost:5000/api/auth/changepassword/${user.id}`, {
+        const res = await fetch(`https://weatherhealth-backend.vercel.app/api/auth/changepassword/${user.id}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -334,6 +352,43 @@
           document.getElementById("confirmPassword").value = "";
         } else {
           msg.textContent = `❌ ${data.error || "Password change failed."}`;
+          msg.style.color = "#e05a5a";
+        }
+      } catch (error) {
+        msg.textContent = "❌ Could not connect to server.";
+        msg.style.color = "#e05a5a";
+      }
+    }
+
+    async function deleteAccount() {
+      const password = document.getElementById("deletePassword").value;
+      const msg = document.getElementById("deleteMsg");
+
+      if (!password) {
+        msg.textContent = "❌ Enter your password to confirm.";
+        msg.style.color = "#e05a5a";
+        return;
+      }
+      if (!confirm("Delete your account and all your data permanently? This cannot be undone.")) return;
+
+      try {
+        const res = await fetch(`https://weatherhealth-backend.vercel.app/api/auth/delete/${user.id}`, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({ password }),
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          alert("Your account and data have been deleted.");
+          window.location.href = "auth.html";
+        } else {
+          msg.textContent = `❌ ${data.error || "Could not delete account."}`;
           msg.style.color = "#e05a5a";
         }
       } catch (error) {

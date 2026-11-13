@@ -25,6 +25,12 @@ function logout() {
   window.location.href = "auth.html";
 }
 
+// Adds the login token (if any) so the server can link searches to the user
+function authHeaders() {
+  const t = localStorage.getItem("token");
+  return t ? { Authorization: `Bearer ${t}` } : {};
+}
+
 checkLoginStatus();
 let currentUser = JSON.parse(localStorage.getItem("user"));
 let currentCity = "";
@@ -32,6 +38,8 @@ let userConditions = [];
 let userAge = null;
 let userActivityLevel = null;
 let lastWeatherData = null;
+let lastAqi = null;
+let lastUvi = null;
 // ---- DOM References ----
 const cityInput   = document.getElementById("cityInput");
 const searchHint  = document.getElementById("searchHint");
@@ -65,7 +73,7 @@ async function getWeather() {
 
  try {
     const url = `${BASE_URL}?city=${encodeURIComponent(city)}`;
-    const response = await fetch(url);
+    const response = await fetch(url, { headers: authHeaders() });
 
     if (!response.ok) {
       if (response.status === 404) throw new Error("City not found. Check the spelling and try again.");
@@ -79,7 +87,7 @@ const lat = data.lat;
 const lon = data.lon;
 displayWeather(data);
 await generateAdvisory(data);
-checkWeatherAlerts(data);
+if ("Notification" in window && Notification.permission === "granted") subscribeToPush();
 loadSearchHistory();
 loadForecast(city);
 checkIfFavorited(data.city);
@@ -149,7 +157,7 @@ async function getUserHealthProfile() {
 //  This is a weighted rule-based score, not machine learning — but it
 //  gives a single, easy-to-read "how risky is today, for you" figure.
 // =============================================
-function computeRiskScore(data, aqi) {
+function computeRiskScore(data, aqi, uvi) {
   const temp = data.temperature;
   const humidity = data.humidity;
   const wind = data.wind_speed;
@@ -179,7 +187,12 @@ function computeRiskScore(data, aqi) {
     else if (aqi >= 3) score += 10;
     else if (aqi >= 2) score += 3;
   }
-
+  // --- UV index ---
+  if (uvi !== null && uvi !== undefined) {
+    if (uvi >= 11) score += 15;
+    else if (uvi >= 8) score += 10;
+    else if (uvi >= 6) score += 5;
+  }
   // --- Personal risk factors ---
   const conditionCount = (userConditions || []).length;
   score += Math.min(conditionCount * 6, 24);
@@ -744,6 +757,9 @@ async function generateAdvisory(data) {
   }
 
 lastWeatherData = data;
+lastAqi = null;
+lastUvi = null;
+
 renderRiskScore(computeRiskScore(data, null), data.city);
 renderAdvisories(advisories, data.city);
 }
@@ -1057,8 +1073,9 @@ async function loadAirQuality(lat, lon, city) {
     // Personalized AQI advisory: append an extra advisory card if the user has
     // a condition that AQI particularly affects, and air quality is poor enough to matter.
     addPersonalizedAqiAdvisory(data.aqi);
+        lastAqi = data.aqi;
     if (lastWeatherData) {
-      renderRiskScore(computeRiskScore(lastWeatherData, data.aqi), city);
+      renderRiskScore(computeRiskScore(lastWeatherData, lastAqi, lastUvi), city);
     }
 
   } catch (error) {
@@ -1117,7 +1134,7 @@ function getLocationWeather() {
       const { latitude, longitude } = position.coords;
 
       try {
-        const res = await fetch(`https://weatherhealth-backend.vercel.app/api/weather?lat=${latitude}&lon=${longitude}`);
+        const res = await fetch(`https://weatherhealth-backend.vercel.app/api/weather?lat=${latitude}&lon=${longitude}`, { headers: authHeaders() });
         const data = await res.json();
 
         cityInput.value = data.city;
@@ -1158,6 +1175,10 @@ async function loadUVIndex(lat, lon, city) {
     document.getElementById("uvAdvice").textContent = data.advice;
 
     document.getElementById("uvSection").style.display = "block";
+        lastUvi = data.uvi;
+    if (lastWeatherData) {
+      renderRiskScore(computeRiskScore(lastWeatherData, lastAqi, lastUvi), city);
+    }
 
   } catch (error) {
     console.log("Could not load UV index:", error);
@@ -1279,6 +1300,27 @@ loadHealthProfile();
 // =============================================
 //  WEATHER ALERTS & NOTIFICATIONS
 // =============================================
+
+ let lastNotifiedMessage = null;
+
+async function sendDeviceNotification(message) {
+  if (message === lastNotifiedMessage) return;
+  lastNotifiedMessage = message;
+
+  try {
+    if ("Notification" in window) {
+      if (Notification.permission === "default") {
+        await Notification.requestPermission();
+      }
+      if (Notification.permission === "granted") {
+        new Notification("WeatherHealth Alert", { body: message });
+      }
+    }
+  } catch (error) {
+    console.log("Could not send notification:", error);
+  }
+}
+
 function checkWeatherAlerts(data) {
   const temp = data.temperature;
   const humidity = data.humidity;
@@ -1312,6 +1354,22 @@ function checkWeatherAlerts(data) {
     alertLevel = "warning";
   }
 
+  // --- Personal alerts (use the user's health profile) ---
+  const has = (c) => (userConditions || []).includes(c);
+
+  if (!alertMessage || alertLevel !== "danger") {
+    if (has("asthma") && (humidity >= 70 || wind >= 14 || desc.includes("fog") || desc.includes("mist") || desc.includes("haze"))) {
+      alertMessage = "🫁 Asthma Alert! Today's conditions may trigger breathing difficulty. Keep your inhaler with you.";
+      alertLevel = "danger";
+    } else if (has("heart disease") && temp >= 33) {
+      alertMessage = "❤️ Heart Health Alert! High temperature puts extra strain on your heart. Avoid outdoor exertion.";
+      alertLevel = "danger";
+    } else if (has("diabetes") && (temp >= 33 || humidity >= 80)) {
+      alertMessage = "🍬 Diabetes Alert! Heat or humidity can affect your blood sugar. Stay hydrated and check it more often.";
+      alertLevel = "warning";
+    }
+  }
+
   const banner = document.getElementById("alertBanner");
   const alertMsg = document.getElementById("alertMessage");
 
@@ -1319,11 +1377,11 @@ function checkWeatherAlerts(data) {
     alertMsg.textContent = alertMessage;
     banner.className = `alert-banner ${alertLevel}`;
     banner.style.display = "flex";
+    sendDeviceNotification(alertMessage);
   } else {
     banner.style.display = "none";
   }
 }
-
 function dismissAlert() {
   document.getElementById("alertBanner").style.display = "none";
 }
@@ -1811,5 +1869,106 @@ async function loadTemperatureChart(city) {
 
   } catch (error) {
     console.log("Could not load temperature chart:", error);
+  }
+}// =============================================
+//  PUSH NOTIFICATIONS (Web Push)
+// =============================================
+const IS_NATIVE_APP = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+const PUSH_API = IS_NATIVE_APP
+  ? "https://weatherhealth-backend.vercel.app"
+  : ((location.hostname === "localhost" || location.hostname === "127.0.0.1")
+      ? "http://localhost:5000"
+      : location.origin);
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = atob(base64);
+  return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
+}
+
+async function subscribeToPush() {
+  if (!currentUser || !currentCity) return false;
+  if (!("serviceWorker" in navigator) || !("PushManager" in window)) return false;
+
+  try {
+    const registration = await navigator.serviceWorker.register("sw.js");
+    await navigator.serviceWorker.ready;
+
+    const keyRes = await fetch(`${PUSH_API}/api/push/key`);
+    const { publicKey } = await keyRes.json();
+
+    const oldSubscription = await registration.pushManager.getSubscription();
+    if (oldSubscription) await oldSubscription.unsubscribe();
+    const subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(publicKey),
+    });
+
+    await fetch(`${PUSH_API}/api/push/subscribe`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId: currentUser.id,
+        subscription: JSON.parse(JSON.stringify(subscription)),
+        city: currentCity,
+      }),
+    });
+    return true;
+  } catch (error) {
+    console.log("Could not subscribe to push:", error);
+    return false;
+  }
+}
+
+async function enablePushAlerts() {
+  if (!currentCity) {
+    alert("Please search a city first, so we know where to watch the weather.");
+    return;
+  }
+  const permission = await Notification.requestPermission();
+  if (permission !== "granted") {
+    alert("Notifications are blocked. Click the lock icon next to the address bar and allow them.");
+    return;
+  }
+  const ok = await subscribeToPush();
+  alert(ok ? "Alerts enabled for " + currentCity + "." : "Could not enable alerts. Open the Console to see the error.");
+}
+// =============================================
+//  DELETE MY ACCOUNT
+// =============================================
+async function deleteMyAccount() {
+  if (!currentUser) return;
+
+  if (!confirm("Delete your account? This removes your profile, favourites and alerts. This cannot be undone.")) return;
+
+  const password = prompt("Type your password to confirm:");
+  if (!password) return;
+
+  try {
+    const res = await fetch(`${PUSH_API}/api/account/delete`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: currentUser.id, password }),
+    });
+    const data = await res.json();
+
+    if (res.ok) {
+      if ("serviceWorker" in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        for (const r of regs) {
+          const s = await r.pushManager.getSubscription();
+          if (s) await s.unsubscribe();
+        }
+      }
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      alert("Your account has been deleted.");
+      window.location.href = "auth.html";
+    } else {
+      alert(data.error || "Could not delete your account.");
+    }
+  } catch (error) {
+    alert("Could not connect to the server.");
   }
 }
