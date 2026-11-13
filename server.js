@@ -17,11 +17,20 @@ const PushSubscription = require("./models/PushSubscription");
 dotenv.config();
 console.log("VAPID key lengths:", (process.env.VAPID_PUBLIC_KEY || "").length, (process.env.VAPID_PRIVATE_KEY || "").length);
 
-webpush.setVapidDetails(
-  "mailto:" + process.env.EMAIL_USER,
-  process.env.VAPID_PUBLIC_KEY,
-  process.env.VAPID_PRIVATE_KEY
-);
+if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+  try {
+    webpush.setVapidDetails(
+      "mailto:" + (process.env.EMAIL_USER || "admin@example.com"),
+      process.env.VAPID_PUBLIC_KEY,
+      process.env.VAPID_PRIVATE_KEY
+    );
+  } catch (err) {
+    console.log("VAPID setup failed:", err.message);
+  }
+} else {
+  console.log("VAPID keys are missing in this environment");
+}
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
