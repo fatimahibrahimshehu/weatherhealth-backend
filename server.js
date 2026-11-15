@@ -13,6 +13,23 @@ const authRoutes = require("./routes/auth");
 const path = require("path");
 const webpush = require("web-push");
 const PushSubscription = require("./models/PushSubscription");
+const AndroidDevice = require("./models/AndroidDevice");
+const admin = require("firebase-admin");
+
+let fcmReady = false;
+if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+  try {
+    const serviceAccount = JSON.parse(
+      Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT, "base64").toString("utf8")
+    );
+    admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+    fcmReady = true;
+  } catch (err) {
+    console.log("Firebase setup failed:", err.message);
+  }
+} else {
+  console.log("Firebase service account is missing in this environment");
+}
 
 dotenv.config();
 console.log("VAPID key lengths:", (process.env.VAPID_PUBLIC_KEY || "").length, (process.env.VAPID_PRIVATE_KEY || "").length);
@@ -596,7 +613,70 @@ function getPushAlert(w, conditions) {
   if (humidity >= 90) return "💧 High Humidity Alert! Feels much hotter than actual temperature. Stay cool.";
   return null;
 }
+app.post("/api/push/android", async (req, res) => {
+  const { userId, token, city } = req.body;
+  if (!userId || !token) {
+    return res.status(400).json({ error: "User ID and token are required" });
+  }
+  try {
+    await AndroidDevice.deleteMany({ userId, token: { $ne: token } });
+    await AndroidDevice.findOneAndUpdate(
+      { token },
+      { userId, token, city: city || "", lastAlert: "" },
+      { upsert: true, returnDocument: "after" }
+    );
+    res.status(201).json({ message: "Android device saved" });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to save Android device" });
+  }
+});
 
+async function checkAndroidDevices(force) {
+  if (!fcmReady) return { checked: 0, sent: 0 };
+  const devices = await AndroidDevice.find({ city: { $ne: "" } });
+  let sent = 0;
+
+  for (const device of devices) {
+    try {
+      const weatherRes = await axios.get("https://api.openweathermap.org/data/2.5/weather", {
+        params: { q: device.city, appid: process.env.API_KEY, units: "metric" },
+      });
+      const d = weatherRes.data;
+      const w = {
+        temperature: Math.round(d.main.temp),
+        humidity: d.main.humidity,
+        wind_speed: d.wind.speed,
+        condition: d.weather[0].main + " " + d.weather[0].description,
+      };
+      const profile = await HealthProfile.findOne({ userId: device.userId });
+      const message = getPushAlert(w, profile && profile.conditions ? profile.conditions : []);
+
+      if (!message) {
+        if (device.lastAlert) { device.lastAlert = ""; await device.save(); }
+        continue;
+      }
+      if (message === device.lastAlert && !force) continue;
+
+      await admin.messaging().send({
+        token: device.token,
+        notification: { title: "WeatherHealth Alert", body: message },
+        android: { priority: "high" },
+      });
+      device.lastAlert = message;
+      await device.save();
+      sent++;
+    } catch (err) {
+      console.log("Android push error:", err.code || err.message);
+      if (
+        err.code === "messaging/registration-token-not-registered" ||
+        err.code === "messaging/invalid-registration-token"
+      ) {
+        await AndroidDevice.deleteOne({ _id: device._id });
+      }
+    }
+  }
+  return { checked: devices.length, sent };
+}
 // This route is called on a schedule (for example by cron-job.org)
 app.get("/api/push/check", async (req, res) => {
   if (req.query.secret !== process.env.CRON_SECRET) {
@@ -642,7 +722,8 @@ app.get("/api/push/check", async (req, res) => {
         }
       }
     }
-    res.json({ checked: subs.length, sent });
+       const android = await checkAndroidDevices(req.query.force === "1");
+    res.json({ checked: subs.length, sent, androidChecked: android.checked, androidSent: android.sent });
   } catch (error) {
     res.status(500).json({ error: "Push check failed" });
   }
