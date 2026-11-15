@@ -88,6 +88,7 @@ const lon = data.lon;
 displayWeather(data);
 await generateAdvisory(data);
 if ("Notification" in window && Notification.permission === "granted") subscribeToPush();
+if (IS_NATIVE_APP) registerAndroidPush();
 loadSearchHistory();
 loadForecast(city);
 checkIfFavorited(data.city);
@@ -1922,6 +1923,15 @@ async function subscribeToPush() {
 }
 
 async function enablePushAlerts() {
+    if (IS_NATIVE_APP) {
+    if (!currentCity) {
+      alert("Please search a city first, so we know where to watch the weather.");
+      return;
+    }
+    await registerAndroidPush();
+    alert("Alerts enabled for " + currentCity + ".");
+    return;
+  }
   if (!currentCity) {
     alert("Please search a city first, so we know where to watch the weather.");
     return;
@@ -1970,5 +1980,54 @@ async function deleteMyAccount() {
     }
   } catch (error) {
     alert("Could not connect to the server.");
+  }
+}
+// =============================================
+//  ANDROID PUSH (Firebase Cloud Messaging via Capacitor)
+// =============================================
+async function registerAndroidPush() {
+  if (!IS_NATIVE_APP || !currentUser) return;
+
+  const PN = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.PushNotifications;
+  if (!PN) {
+    console.log("PushNotifications plugin not available");
+    return;
+  }
+
+  try {
+    let perm = await PN.checkPermissions();
+    if (perm.receive === "prompt" || perm.receive === "prompt-with-rationale") {
+      perm = await PN.requestPermissions();
+    }
+    if (perm.receive !== "granted") {
+      console.log("Android notification permission not granted");
+      return;
+    }
+
+    await PN.removeAllListeners();
+
+    PN.addListener("registration", async (token) => {
+      try {
+        await fetch(`${PUSH_API}/api/push/android`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: currentUser.id,
+            token: token.value,
+            city: currentCity || "",
+          }),
+        });
+      } catch (err) {
+        console.log("Could not save Android token:", err);
+      }
+    });
+
+    PN.addListener("registrationError", (err) => {
+      console.log("Android push registration error:", JSON.stringify(err));
+    });
+
+    await PN.register();
+  } catch (error) {
+    console.log("Android push setup failed:", error);
   }
 }
