@@ -631,13 +631,23 @@ app.post("/api/push/android", async (req, res) => {
   }
 });
 
-async function checkAndroidDevices(force) {
-  if (!fcmReady) return { checked: 0, sent: 0 };
-  const devices = await AndroidDevice.find({ city: { $ne: "" } });
+async function checkAndroidDevices(force, testMessage) {
+  let lastError = null;
+    if (!fcmReady) return { checked: 0, sent: 0, error: "firebase-not-configured" };
+    const devices = await AndroidDevice.find(testMessage ? {} : { city: { $ne: "" } });
   let sent = 0;
 
   for (const device of devices) {
     try {
+            if (testMessage) {
+        await admin.messaging().send({
+          token: device.token,
+          notification: { title: "WeatherHealth Test", body: testMessage },
+          android: { priority: "high" },
+        });
+        sent++;
+        continue;
+      }
       const weatherRes = await axios.get("https://api.openweathermap.org/data/2.5/weather", {
         params: { q: device.city, appid: process.env.API_KEY, units: "metric" },
       });
@@ -667,6 +677,7 @@ async function checkAndroidDevices(force) {
       sent++;
     } catch (err) {
       console.log("Android push error:", err.code || err.message);
+            lastError = err.code || err.message;
       if (
         err.code === "messaging/registration-token-not-registered" ||
         err.code === "messaging/invalid-registration-token"
@@ -675,7 +686,7 @@ async function checkAndroidDevices(force) {
       }
     }
   }
-  return { checked: devices.length, sent };
+    return { checked: devices.length, sent, error: lastError };
 }
 // This route is called on a schedule (for example by cron-job.org)
 app.get("/api/push/check", async (req, res) => {
@@ -722,8 +733,9 @@ app.get("/api/push/check", async (req, res) => {
         }
       }
     }
-       const android = await checkAndroidDevices(req.query.force === "1");
-    res.json({ checked: subs.length, sent, androidChecked: android.checked, androidSent: android.sent });
+         const testMessage = req.query.test === "1" ? "Test alert: Android push notifications are working." : null;
+    const android = await checkAndroidDevices(req.query.force === "1", testMessage);
+    res.json({ checked: subs.length, sent, androidChecked: android.checked, androidSent: android.sent, androidError: android.error });
   } catch (error) {
     res.status(500).json({ error: "Push check failed" });
   }
